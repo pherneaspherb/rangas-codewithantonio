@@ -7,7 +7,7 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId, orgId } = await auth();
   const pathname = req.nextUrl.pathname;
 
-  // Allow auth pages
+  // Allow public routes
   if (PUBLIC_ROUTES.includes(pathname)) {
     return NextResponse.next();
   }
@@ -17,16 +17,16 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
-  // Root → redirect to active org
+  // Allow organization routes to load
+  if (pathname.startsWith("/organization")) {
+    return NextResponse.next();
+  }
+
+  // Root → redirect to org if exists
   if (pathname === "/" && orgId) {
     return NextResponse.redirect(
       new URL(`/organization/${orgId}`, req.url)
     );
-  }
-
-  // Logged in but no org → select org
-  if (!orgId && pathname !== "/select-org") {
-    return NextResponse.redirect(new URL("/select-org", req.url));
   }
 
   return NextResponse.next();

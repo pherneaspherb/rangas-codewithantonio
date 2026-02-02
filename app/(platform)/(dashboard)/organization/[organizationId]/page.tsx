@@ -1,9 +1,7 @@
-const OrganizationIdPage = () => {
-return (
-    <div>
-        Organization Page
+export default function OrganizationIdPage() {
+  return (
+    <div style={{ paddingTop: "100px", color: "black" }}>
+      Organization Page
     </div>
-    );
-};
-
-export default OrganizationIdPage;
+  );
+}
