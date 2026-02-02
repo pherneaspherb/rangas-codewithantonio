@@ -1,3 +1,5 @@
+import { Sidebar } from "../_components/sidebar";
+
 const OrganizationLayout = ({
     children
 }: {
@@ -8,7 +10,7 @@ const OrganizationLayout = ({
         mx-auto ">
             <div className="flex gap-x-7">
                 <div className="w-64 shrink-0 hidden md:block">
-                    {/* Sidebar */}
+                    <Sidebar />
                 </div>
             {children}
             </div>
