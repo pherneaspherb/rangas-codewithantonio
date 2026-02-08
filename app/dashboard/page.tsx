@@ -1,10 +1,20 @@
 "use client";
 
 import Navbar from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
+import { Plus } from "lucide-react";
+
+// https://topical-dane-51.clerk.accounts.dev
 
 export default function DashboardPage() {
     const { user } = useUser();
+    const { createBoard } = useBoards();
+
+    const handleCreateBoard = async () => {
+        await createBoard({ title: "New Board" }); 
+    };
     
     return <div className="min-h-screen b-gray-50">
         <Navbar />
@@ -18,6 +28,10 @@ export default function DashboardPage() {
                 <p className="text-gray-600">
                     Here's what's happening with your boards today.
                 </p>
+                <Button className="w-full sm:w-auto" onClick={handleCreateBoard}>
+                    <Plus className="h-4 w-4 mr-2"/>
+                    Create Board
+                </Button>
             </div>
         </main>
     </div>

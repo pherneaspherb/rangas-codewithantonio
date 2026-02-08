@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { ClerkProvider } from "@clerk/nextjs";
+import SupabaseProvider from "@/lib/supabase/SupabaseProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,26 +25,26 @@ export const metadata: Metadata = {
     {
       url: "/logo.svg",
       href: "/logo.svg",
-    }
-  ]
+    },
+  ],
 };
-
-
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <ClerkProvider>
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <SupabaseProvider>
+            {children}
+          </SupabaseProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
