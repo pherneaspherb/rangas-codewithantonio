@@ -10,11 +10,14 @@ export default function DashboardPage() {
         <Navbar />
 
         <main className="container mx-auto px-4 py-6 sm:py-8">
-            <div>
-                <h1>
-                    Welcome back,{" "}
+            <div className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                    Welcome back,
                     {user?.firstName ?? user?.emailAddresses[0].emailAddress}! 👋
                 </h1>
+                <p className="text-gray-600">
+                    Here's what's happening with your boards today.
+                </p>
             </div>
         </main>
     </div>
