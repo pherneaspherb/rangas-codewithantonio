@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // ✅ add CardContent
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
-import { Loader2, Plus, Trello } from "lucide-react";
+import { Activity, Loader2, Plus, Rocket, Trello } from "lucide-react";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -61,6 +61,51 @@ export default function DashboardPage() {
                 {/* Right side (Icon centered) */}
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Trello className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                </div>
+
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+
+                {/* Left side */}
+                <div>
+                  <p className="text-sm text-gray-500">Recent Activity</p>
+                  <p className="text-2xl font-bold">
+                    {
+                      boards.filter((board) => {
+                        const updatedAt = new Date(board.updated_at);
+                        const oneWeekAgo = new Date();
+                        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                        return updatedAt > oneWeekAgo;
+                      }).length
+                    }
+                  </p>
+                </div>
+
+                {/* Right side */}
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                </div>
+
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+
+                {/* Left side */}
+                <div>
+                  <p className="text-sm text-gray-500">Active Projects</p>
+                  <p className="text-2xl font-bold">{boards.length}</p>
+                </div>
+
+                {/* Right side (Icon centered) */}
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
 
               </div>
