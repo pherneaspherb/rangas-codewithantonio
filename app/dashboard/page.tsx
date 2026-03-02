@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // ✅ add CardContent
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
-import { Activity, Grid3x3, Loader2, Plus, Rocket, Trello } from "lucide-react";
+import { Activity, Filter, Grid3x3, List, Loader2, Plus, Rocket, Trello } from "lucide-react";
 import { useState } from "react";
 
 export default function DashboardPage() {
@@ -150,26 +150,59 @@ export default function DashboardPage() {
         </div>
 
         {/* Boards */}
-        <div className="mt-8 sm:mt-12 mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
-            <div className="w-full">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Your Boards
-              </h2>
+        <div className="mt-8 sm:mt-12">
+          {/* Header row: left text + right controls */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Left: title + description */}
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Your Boards</h2>
               <p className="text-gray-600">Manage your projects and tasks</p>
+            </div>
 
-              {/* ✅ White bar under "Your Boards" */}
-              <div className="mt-4 flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 w-full shadow-sm">
+            {/* Right: controls (match screenshot) */}
+            <div className="flex items-center gap-2">
+              {/* Toggle group container */}
+              <div className="flex items-center rounded-lg border bg-white p-1 shadow-sm">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("grid")}
+                  className={viewMode === "grid" ? "bg-black hover:bg-gray-800" : ""}
+                >
+                  <Grid3x3 className={viewMode === "grid" ? "text-white" : ""} />
+                </Button>
 
-                {/* 🔲 Black Grid Button */}
-                <button className="h-10 w-10 rounded-lg bg-black flex items-center justify-center hover:bg-gray-800 transition">
-                  <Grid3x3 className="h-5 w-5 text-white" />
-                </button>
-
-                {/* Empty stretch area (just visual bar for now) */}
-                <div className="flex-1 h-6" />
-
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("list")}
+                  className={viewMode === "list" ? "bg-black hover:bg-gray-800" : ""}
+                >
+                  <List className={viewMode === "list" ? "text-white" : ""} />
+                </Button>
               </div>
+
+              {/* Filter button */}
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+
+              {/* Create board button */}
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Board
+              </Button>
+            </div>
+          </div>
+
+          {/* Search bar row (below) */}
+          <div className="mt-4">
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+              {/* Just the bar for now; no placeholder requirement? keep empty input */}
+              <input
+                className="w-full outline-none bg-transparent text-sm"
+              />
             </div>
           </div>
         </div>
