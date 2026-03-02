@@ -48,6 +48,7 @@ export default function DashboardPage() {
 
         {/* ✅ STATS (this is what the tutorial shows) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          {/* 1st card */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
@@ -66,6 +67,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+          {/* 2nd card */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
@@ -89,10 +91,29 @@ export default function DashboardPage() {
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* 3rd card */}
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+
+                {/* Left side */}
+                <div>
+                  <p className="text-sm text-gray-500">Active Projects</p>
+                  <p className="text-2xl font-bold">{boards.length}</p>
+                </div>
+
+                {/* Right side (Icon centered) */}
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                </div>
 
               </div>
             </CardContent>
           </Card>
+          {/* 4th card */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
