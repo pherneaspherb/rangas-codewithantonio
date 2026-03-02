@@ -3,9 +3,10 @@
 import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // ✅ add CardContent
+import { Input } from "@/components/ui/input";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
-import { Activity, Filter, Grid3x3, List, Loader2, Plus, Rocket, Trello } from "lucide-react";
+import { Activity, Filter, Grid3x3, List, Loader2, Plus, Rocket, Search, Trello } from "lucide-react";
 import { useState } from "react";
 
 export default function DashboardPage() {
@@ -189,7 +190,7 @@ export default function DashboardPage() {
               </Button>
 
               {/* Create board button */}
-              <Button size="sm" className="gap-2">
+              <Button onClick={handleCreateBoard}>
                 <Plus className="h-4 w-4" />
                 Create Board
               </Button>
@@ -198,10 +199,13 @@ export default function DashboardPage() {
 
           {/* Search bar row (below) */}
           <div className="mt-4">
-            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-              {/* Just the bar for now; no placeholder requirement? keep empty input */}
-              <input
-                className="w-full outline-none bg-transparent text-sm"
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+
+              <Input
+                id="search"
+                placeholder="Search boards..."
+                className="pl-10"
               />
             </div>
           </div>
