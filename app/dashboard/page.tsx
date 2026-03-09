@@ -1,12 +1,14 @@
 "use client";
 
 import Navbar from "@/components/navbar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card"; // ✅ add CardContent
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // ✅ add CardContent
 import { Input } from "@/components/ui/input";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
 import { Activity, Filter, Grid3x3, List, Loader2, Plus, Rocket, Search, Trello } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function DashboardPage() {
@@ -208,6 +210,43 @@ export default function DashboardPage() {
                 className="pl-10"
               />
             </div>
+            {/*Boards Grid List*/}
+            {boards.length === 0 ? (
+              <div className="mt-6">No boards yet</div>
+            ) : viewMode === "grid" ? (
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {boards.map((board, key) => (   
+                <Link href={'/boards/${board.id}'} key={key}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className={'w-4 h-4 ${board.color} rounded'}/>
+                        <Badge className="text-xs" variant="secondary">
+                          New
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardTitle>{board.title}</CardTitle>
+                      <CardDescription>{board.description}</CardDescription>
+                      <div>
+                        <span>
+                          Created{" "}
+                          {new Date(board.created_at).toLocaleDateString()}
+                        </span>
+                        <span>
+                          Updated{" "}
+                          {new Date(board.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>            
+              ))}
+              </div>
+            ) : (
+              <div></div>
+            )}
           </div>
         </div>
 
