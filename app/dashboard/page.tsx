@@ -220,16 +220,16 @@ export default function DashboardPage() {
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <div className={'w-4 h-4 ${board.color} rounded'}/>
+                        <div className={`w-4 h-4 ${board.color} rounded`} />
                         <Badge className="text-xs" variant="secondary">
                           New
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <CardTitle>{board.title}</CardTitle>
-                      <CardDescription>{board.description}</CardDescription>
-                      <div>
+                    <CardContent className="p-4 sm:p-6">
+                      <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">{board.title}</CardTitle>
+                      <CardDescription className="text-sm mb-4">{board.description}</CardDescription>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
                         <span>
                           Created{" "}
                           {new Date(board.created_at).toLocaleDateString()}
@@ -243,6 +243,13 @@ export default function DashboardPage() {
                   </Card>
                 </Link>            
               ))}
+
+              <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group">
+                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-50[200px]">
+                  <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2"/>
+                  <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">Create new board</p>
+                </CardContent>
+              </Card>
               </div>
             ) : (
               <div></div>
