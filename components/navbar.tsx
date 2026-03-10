@@ -49,9 +49,10 @@ export default function Navbar({boardTitle, onEditBoard}: Props) {
             <span className="sm:hidden">Back</span>
             </Link>
             <div className="h-4 sm:h-6 w-px bg-gray-300 hidden sm:block"/>
-            <div>
-              <Trello />
-              <span>{boardTitle}</span>
+            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
+              <Trello className="text-blue-600"/>
+              <div className="text-lg items-center space-x-1 sm:space-x-2 min-w-0">
+              <span className="text-lg font-bold text-gray-900 truncate">{boardTitle}</span>
               {onEditBoard && (
                 <Button
                 variant="ghost"
@@ -62,6 +63,7 @@ export default function Navbar({boardTitle, onEditBoard}: Props) {
                   <MoreHorizontal />
                 </Button>
               )}
+              </div>
             </div>
           </div>
         </div>

@@ -84,7 +84,9 @@ export function useBoard(boardId: string) {
             setLoading(true);
             setError(null);
             const data = await boardDataService.getBoardWithColumns(supabase, boardId);
-            setBoard(data.board);
+            if (data.board) {
+                setBoard(Array.isArray(data.board) ? data.board[0] : data.board);
+            }
             setColumns(data.columns);
             console.log("user:", board?.id, "supabase ready:", !!supabase);
         } catch (err) {
