@@ -216,7 +216,7 @@ export default function DashboardPage() {
             ) : viewMode === "grid" ? (
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {boards.map((board, key) => (   
-                <Link href={'/boards/${board.id}'} key={key}>
+                <Link href={`/boards/${board.id}`} key={key}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
@@ -256,7 +256,7 @@ export default function DashboardPage() {
               <div>
                 {boards.map((board, key) => (
                   <div key={key} className={key > 0 ? "mt-4" : ""}> 
-                <Link href={'/boards/${board.id}'}>
+                <Link href={`/boards/${board.id}`}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
