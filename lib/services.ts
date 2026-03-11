@@ -41,7 +41,25 @@ export const boardService = {
 
         return data;
     },
+
+    async updateBoard(
+        supabase: SupabaseClient,
+        boardId: string,
+        updates: Partial<Board>
+    ): Promise<Board> {
+        const { data, error } = await supabase
+            .from("boards")
+            .update(updates)
+            .eq("id", boardId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return data;
+    }
 };
+
 
 
 export const columnService = {
@@ -116,13 +134,13 @@ export const boardDataService = {
 
         await Promise.all(
             defaultColumns.map((column) =>
-            columnService.createColumn(supabase, { 
-                ...column, 
-                board_id: board.id,
-                user_id: boardData.userId
-            
-            })
-        )
+                columnService.createColumn(supabase, {
+                    ...column,
+                    board_id: board.id,
+                    user_id: boardData.userId
+
+                })
+            )
         );
 
         return board;
