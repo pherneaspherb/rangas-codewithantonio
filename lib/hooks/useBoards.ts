@@ -131,14 +131,14 @@ export function useBoard(boardId: string) {
         try {
 
             console.log("creating task with:", {
-            title: taskData.title,
-            description: taskData.description || null,
-            assignee: taskData.assignee || null,
-            due_date: taskData.dueDate || null,
-            column_id: columnId,
-            sort_order: columns.find((col) => col.id === columnId)?.tasks.length || 0,
-            priority: taskData.priority || "medium",
-        });
+                title: taskData.title,
+                description: taskData.description || null,
+                assignee: taskData.assignee || null,
+                due_date: taskData.dueDate || null,
+                column_id: columnId,
+                sort_order: columns.find((col) => col.id === columnId)?.tasks.length || 0,
+                priority: taskData.priority || "medium",
+            });
             const newTask = await taskService.createTask(supabase!, {
                 title: taskData.title,
                 description: taskData.description || null,

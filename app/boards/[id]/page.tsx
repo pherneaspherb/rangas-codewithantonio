@@ -334,7 +334,7 @@ export default function BoardPage() {
                             onCreateTask={() => { }}
                             onEditColumn={() => { }}
                         >
-                            <div>
+                            <div className="space-y-3">
                                 {column.tasks.map((task) => (
                                     <div key={task.id}>{task.title}</div>
                                 ))}

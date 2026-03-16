@@ -116,6 +116,8 @@ export const taskService = {
         supabase: SupabaseClient,
         task: Omit<Task, "id" | "created_at" | "updated_at">
     ): Promise<Task> {
+        console.log("createTask payload:", task);
+
         const { data, error } = await supabase
             .from("tasks")
             .insert(task)
@@ -123,6 +125,7 @@ export const taskService = {
             .single();
 
         if (error) {
+            console.error("createTask full error:", error);
             console.log("createTask message:", error.message);
             console.log("createTask details:", error.details);
             console.log("createTask hint:", error.hint);
@@ -133,8 +136,6 @@ export const taskService = {
         return data;
     }
 };
-
-
 
 export const boardDataService = {
     async getBoardWithColumns(
