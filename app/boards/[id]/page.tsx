@@ -15,18 +15,23 @@ import { MoreHorizontal, Plus } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+<<<<<<< HEAD
 function Column({
     column,
     children,
     onCreateTask,
     onEditColumn,
 }: {
+=======
+function Column({ column, children, onCreateTask, onEditColumn }: {
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
     column: ColumnWithTasks;
     children: React.ReactNode;
     onCreateTask: (taskData: any) => Promise<void>;
     onEditColumn: (column: ColumnWithTasks) => void;
 }) {
     return (
+<<<<<<< HEAD
         <div className="w-full lg:flex-shrink-0 lg:w-80">
             <div className="bg-white rounded-lg shadow-sm border">
                 {/* Column Header */}
@@ -36,6 +41,15 @@ function Column({
                             <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                                 {column.title}
                             </h3>
+=======
+        <div className="w-full lg:-shrink-0 lg:w-80">
+            <div className="bg-white rounded-lg  shadow-sm border">
+                <div className="p-3 sm:p-4 border-b">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 min-w-0">
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                                {column.title}</h3>
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                             <Badge variant="secondary" className="text-xs shrink-0">
                                 {column.tasks.length}
                             </Badge>
@@ -45,8 +59,13 @@ function Column({
                         </Button>
                     </div>
                 </div>
+<<<<<<< HEAD
 
                 {/* column content */}
+=======
+                {/* column content */}
+                <div className="p-2">{children}</div>
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
             </div>
         </div>
     );
@@ -54,7 +73,7 @@ function Column({
 
 export default function BoardPage() {
     const { id } = useParams<{ id: string }>();
-    const { board, updateBoard, columns } = useBoard(id);
+    const { board, updateBoard, columns, createRealTask } = useBoard(id);
 
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [newTitle, setNewTitle] = useState("");
@@ -74,6 +93,57 @@ export default function BoardPage() {
             });
             setIsEditingTitle(false);
         } catch { }
+    }
+
+    async function createTask(taskData: {
+        title: string;
+        description?: string;
+        assignee?: string;
+        dueDate?: string;
+        priority?: "low" | "medium" | "high";
+    }) {
+        const targetColumn = columns[0];
+        if (!targetColumn) {
+            throw new Error("No column available to add task");
+        }
+        await createRealTask(targetColumn.id, taskData);
+    }
+
+    async function handleCreateTask(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+
+        try {
+            const formData = new FormData(e.currentTarget);
+
+            const taskData = {
+                title: formData.get("title") as string,
+                description: (formData.get("description") as string) || undefined,
+                assignee: (formData.get("assignee") as string) || undefined,
+                dueDate: (formData.get("dueDate") as string) || undefined,
+                priority: "medium" as "low" | "medium" | "high",
+            };
+
+            console.log("taskData:", taskData);
+            console.log("columns:", columns);
+
+            const todoColumn = columns.find(
+                (column) => column.title.toLowerCase() === "to do"
+            );
+
+            console.log("todoColumn:", todoColumn);
+
+            if (!todoColumn) {
+                console.error("No To Do column found");
+                return;
+            }
+
+            if (taskData.title.trim()) {
+                const result = await createRealTask(todoColumn.id, taskData);
+                console.log("created task:", result);
+            }
+        } catch (err) {
+            console.error("handleCreateTask error:", err);
+        }
     }
 
     return (
@@ -211,7 +281,11 @@ export default function BoardPage() {
                             </Button>
                         </DialogTrigger>
 
+<<<<<<< HEAD
                         <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
+=======
+                        <DialogContent className="w-[95vw] max-w-106.25 mx-auto">
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                             <DialogHeader>
                                 <DialogTitle>Create New Task</DialogTitle>
                                 <p className="text-sm text-gray-600">
@@ -219,7 +293,11 @@ export default function BoardPage() {
                                 </p>
                             </DialogHeader>
 
+<<<<<<< HEAD
                             <form className="space-y-4">
+=======
+                            <form className="space-y-4" onSubmit={handleCreateTask}>
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                                 <div className="space-y-2">
                                     <Label htmlFor="title">Title *</Label>
                                     <Input
@@ -250,7 +328,11 @@ export default function BoardPage() {
 
                                 <div className="space-y-2">
                                     <Label>Priority</Label>
+<<<<<<< HEAD
                                     <Select name="priority" defaultValue="medium">
+=======
+                                    <Select name="priority">
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                                         <SelectTrigger className="w-full">
                                             <SelectValue />
                                         </SelectTrigger>
@@ -263,13 +345,21 @@ export default function BoardPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+<<<<<<< HEAD
 
                                 <div className="space-y-2">
+=======
+                                <div>
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                                     <Label>Due Date</Label>
                                     <Input type="date" id="dueDate" name="dueDate" />
                                 </div>
 
+<<<<<<< HEAD
                                 <div className="flex justify-end space-x-2 pt-4">
+=======
+                                <div>
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                                     <Button type="submit">Create Task</Button>
                                 </div>
                             </form>
@@ -279,8 +369,23 @@ export default function BoardPage() {
 
                 {/* Board Columns */}
                 <div>
+<<<<<<< HEAD
                     {columns.map((column, key) => (
                         <Column key={key} column={column}>
+=======
+                    {columns.map((column) => (
+                        <Column
+                            key={column.id}
+                            column={column}
+                            onCreateTask={() => { }}
+                            onEditColumn={() => { }}
+                        >
+                            <div>
+                                {column.tasks.map((task) => (
+                                    <div key={task.id}>{task.title}</div>
+                                ))}
+                            </div>
+>>>>>>> 5305283 (can add NEW TASK now, new task is now appearing)
                         </Column>
                     ))}
                 </div>

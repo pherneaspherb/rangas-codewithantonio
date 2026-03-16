@@ -1,7 +1,7 @@
 "use client";
- 
+
 import { useUser } from "@clerk/nextjs";
-import { boardDataService, boardService, columnService } from "../services";
+import { boardDataService, boardService, columnService, taskService } from "../services";
 import { useEffect, useState } from "react";
 import { Board, Column, ColumnWithTasks } from "../supabase/models";
 import { useSupabase } from "../supabase/SupabaseProvider";
@@ -86,7 +86,7 @@ export function useBoard(boardId: string) {
             const data = await boardDataService.getBoardWithColumns(supabase, boardId);
             setBoard(data.board);
             setColumns(data.columnsWithTasks);
-            console.log("user:", board?.id, "supabase ready:", !!supabase);
+            console.log("board:", data.board?.id, "supabase ready:", !!supabase);
         } catch (err) {
             console.error("loadBoards error:", err);
             setError(err instanceof Error ? err.message : "Failed to load boards.");
@@ -119,11 +119,60 @@ export function useBoard(boardId: string) {
         }
     }
 
+    async function createRealTask(
+        columnId: string,
+        taskData: {
+            title: string;
+            description?: string;
+            assignee?: string;
+            dueDate?: string;
+            priority?: "low" | "medium" | "high";
+        }) {
+        try {
+
+            console.log("creating task with:", {
+            title: taskData.title,
+            description: taskData.description || null,
+            assignee: taskData.assignee || null,
+            due_date: taskData.dueDate || null,
+            column_id: columnId,
+            sort_order: columns.find((col) => col.id === columnId)?.tasks.length || 0,
+            priority: taskData.priority || "medium",
+        });
+            const newTask = await taskService.createTask(supabase!, {
+                title: taskData.title,
+                description: taskData.description || null,
+                assignee: taskData.assignee || null,
+                due_date: taskData.dueDate || null,
+                column_id: columnId,
+                sort_order: columns.find((col) => col.id === columnId)?.tasks.length || 0,
+                priority: taskData.priority || "medium",
+            });
+
+            setColumns((prev) =>
+                prev.map((col) =>
+                    col.id === columnId ? { ...col, tasks: [...col.tasks, newTask] } : col
+                )
+            );
+
+            return newTask;
+        } catch (err: any) {
+            console.error("createRealTask raw error:", err);
+            console.log("message:", err?.message);
+            console.log("details:", err?.details);
+            console.log("hint:", err?.hint);
+            console.log("code:", err?.code);
+
+            setError(err?.message || "Failed to create the task.");
+        }
+    }
+
     return {
         board,
         columns,
         loading,
         error,
         updateBoard,
+        createRealTask,
     };
 }

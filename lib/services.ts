@@ -111,6 +111,27 @@ export const taskService = {
 
         return (data ?? []) as Task[];
     },
+
+    async createTask(
+        supabase: SupabaseClient,
+        task: Omit<Task, "id" | "created_at" | "updated_at">
+    ): Promise<Task> {
+        const { data, error } = await supabase
+            .from("tasks")
+            .insert(task)
+            .select()
+            .single();
+
+        if (error) {
+            console.log("createTask message:", error.message);
+            console.log("createTask details:", error.details);
+            console.log("createTask hint:", error.hint);
+            console.log("createTask code:", error.code);
+            throw error;
+        }
+
+        return data;
+    }
 };
 
 
