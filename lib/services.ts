@@ -130,7 +130,10 @@ export const taskService = {
             console.log("createTask details:", error.details);
             console.log("createTask hint:", error.hint);
             console.log("createTask code:", error.code);
-            throw error;
+
+            throw new Error(
+                `createTask failed | message: ${error.message} | details: ${error.details ?? "none"} | hint: ${error.hint ?? "none"} | code: ${error.code ?? "none"}`
+            );
         }
 
         return data;

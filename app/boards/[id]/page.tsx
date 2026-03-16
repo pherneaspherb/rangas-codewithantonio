@@ -9,12 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
-import { ColumnWithTasks } from "@/lib/supabase/models";
+import { ColumnWithTasks, Task as TaskType } from "@/lib/supabase/models";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { Task } from "@/lib/supabase/models";
 import { Card, CardContent } from "@/components/ui/card";
 
 function Column({ column, children, onCreateTask, onEditColumn }: {
@@ -41,13 +40,92 @@ function Column({ column, children, onCreateTask, onEditColumn }: {
                     </div>
                 </div>
                 {/* column content */}
-                <div className="p-2">{children}</div>
+                <div className="p-2">{children}
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" className="w-full mt-3 text-gray hover:text-gray-900">
+                                <Plus />
+                                Add Task
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-[95vw] max-w-106.25 mx-auto">
+                            <DialogHeader>
+                                <DialogTitle>Create New Task</DialogTitle>
+                                <p className="text-sm text-gray-600">
+                                    Add a task to the board
+                                </p>
+                            </DialogHeader>
+
+                            <form className="space-y-4" onSubmit={onCreateTask}>
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Title *</Label>
+                                    <Input
+                                        id="title"
+                                        name="title"
+                                        placeholder="Enter task title"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        name="description"
+                                        placeholder="Enter task description"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="assignee">Assignee</Label>
+                                    <Input
+                                        id="assignee"
+                                        name="assignee"
+                                        placeholder="Who should do this?"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Priority</Label>
+                                    <Select name="priority">
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {["low", "medium", "high"].map((priority, key) => (
+                                                <SelectItem key={key} value={priority}>
+                                                    {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label>Due Date</Label>
+                                    <Input type="date" id="dueDate" name="dueDate" />
+                                </div>
+
+                                <div>
+                                    <Button type="submit">Create Task</Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
         </div>
     );
 }
 
-function TaskCard({ task }: { task: Task }) {
+
+
+
+
+
+
+
+
+function TaskCard({ task }: { task: TaskType }) {
     function getPriorityColor(priority: "low" | "medium" | "high"): string {
         switch (priority) {
             case "high":
@@ -156,7 +234,7 @@ export default function BoardPage() {
                 description: (formData.get("description") as string) || undefined,
                 assignee: (formData.get("assignee") as string) || undefined,
                 dueDate: (formData.get("dueDate") as string) || undefined,
-                priority: "medium" as "low" | "medium" | "high",
+                priority: (formData.get("priority") as "low" | "medium" | "high") || "medium",
             };
 
             console.log("taskData:", taskData);
@@ -398,7 +476,7 @@ space-y-4 lg:space-y-0">
                         <Column
                             key={column.id}
                             column={column}
-                            onCreateTask={createTask}
+                            onCreateTask={handleCreateTask}
                             onEditColumn={() => { }}
                         >
                             <div className="space-y-3">
