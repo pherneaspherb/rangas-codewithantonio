@@ -100,7 +100,7 @@ export default function BoardPage() {
             console.log("taskData:", taskData);
             console.log("columns:", columns);
 
-            const todoColumn = columns.find(
+            const todoColumn = columns.find( 
                 (column) => column.title.toLowerCase() === "to do"
             );
 
@@ -114,6 +114,11 @@ export default function BoardPage() {
             if (taskData.title.trim()) {
                 const result = await createRealTask(todoColumn.id, taskData);
                 console.log("created task:", result);
+
+                const trigger = document.querySelector(
+                    '[data-state="open"'
+                ) as HTMLElement;
+                if (trigger) trigger.click();
             }
         } catch (err) {
             console.error("handleCreateTask error:", err);
