@@ -15,15 +15,24 @@ import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { DndContext, useDroppable } from "@dnd-kit/core";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-function Column({ column, children, onCreateTask, onEditColumn }: {
+function DroppableColumn({ column, children, onCreateTask, onEditColumn }: {
     column: ColumnWithTasks;
     children: React.ReactNode;
     onCreateTask: (taskData: any) => Promise<void>;
     onEditColumn: (column: ColumnWithTasks) => void;
 }) {
+
+    const { setNodeRef, isOver } = useDroppable({ id: column.id });
+
     return (
-        <div className="w-full lg:-shrink-0 lg:w-80">
+        <div ref={setNodeRef}
+            className={`w-full lg:-shrink-0 lg:w-80
+        ${isOver ? "bg-blue-50 rounded-lg" : ""
+                }`}>
             <div className="bg-white rounded-lg  shadow-sm border">
                 <div className="p-3 sm:p-4 border-b">
                     <div className="flex items-center justify-between">
@@ -125,7 +134,23 @@ function Column({ column, children, onCreateTask, onEditColumn }: {
 
 
 
-function TaskCard({ task }: { task: TaskType }) {
+function SortableTaskCard({ task }: { task: TaskType }) {
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: task.id });
+
+    const styles = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
     function getPriorityColor(priority: "low" | "medium" | "high"): string {
         switch (priority) {
             case "high":
@@ -140,48 +165,50 @@ function TaskCard({ task }: { task: TaskType }) {
     }
 
     return (
-        <Card className="rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-4 sm:p-5">
-                <div className="space-y-3">
-                    {/* Task Header */}
-                    <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug flex-1">
-                            {task.title}
-                        </h4>
-                    </div>
-
-                    {/* Task Description */}
-                    <p className="text-sm text-gray-500 line-clamp-2">
-                        {task.description || "No description."}
-                    </p>
-
-                    {/* Task Meta */}
-                    <div className="flex items-center justify-between gap-3 pt-1">
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 min-w-0">
-                            <div className="flex items-center gap-1 min-w-0">
-                                <User className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">
-                                    {task.assignee || "Unassigned"}
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-1 min-w-0">
-                                <Calendar className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">
-                                    {task.due_date
-                                        ? new Date(task.due_date).toLocaleDateString()
-                                        : "No date"}
-                                </span>
-                            </div>
+        <div ref={setNodeRef} style={styles} {...listeners} {...attributes}>
+            <Card className="rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-5">
+                    <div className="space-y-3">
+                        {/* Task Header */}
+                        <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug flex-1">
+                                {task.title}
+                            </h4>
                         </div>
 
-                        <div
-                            className={`h-2.5 w-2.5 rounded-full shrink-0 ${getPriorityColor(task.priority)}`}
-                        />
+                        {/* Task Description */}
+                        <p className="text-sm text-gray-500 line-clamp-2">
+                            {task.description || "No description."}
+                        </p>
+
+                        {/* Task Meta */}
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 min-w-0">
+                                <div className="flex items-center gap-1 min-w-0">
+                                    <User className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="truncate">
+                                        {task.assignee || "Unassigned"}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 min-w-0">
+                                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="truncate">
+                                        {task.due_date
+                                            ? new Date(task.due_date).toLocaleDateString()
+                                            : "No date"}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div
+                                className={`h-2.5 w-2.5 rounded-full shrink-0 ${getPriorityColor(task.priority)}`}
+                            />
+                        </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
@@ -466,27 +493,42 @@ export default function BoardPage() {
                 </div>
 
                 {/* Board Columns */}
-                <div className="flex flex-col lg:flex-row lg:space-x-6 lg:overflow-x-auto
-lg:pb-6 lg:px-2 lg:-mx-2 lg:[&::-webkit-scrollbar]:h-2
-lg:[&::-webkit-scrollbar-track]:bg-gray-100
-lg:[&::-webkit-scrollbar-thumb]:bg-gray-300 lg:[&::-webkit-scrollbar-thumb]:rounded-full
-space-y-4 lg:space-y-0">
 
-                    {columns.map((column) => (
-                        <Column
-                            key={column.id}
-                            column={column}
-                            onCreateTask={handleCreateTask}
-                            onEditColumn={() => { }}
-                        >
-                            <div className="space-y-3">
-                                {column.tasks.map((task) => (
-                                    <TaskCard task={task} key={task.id} />
-                                ))}
-                            </div>
-                        </Column>
-                    ))}
-                </div>
+                <DndContext
+                // sensors={}
+                // collisionDetection={}
+                // onDragStart={}
+                // onDragOver={}
+                // onDragEnd={}
+                >
+
+
+                    <div className="flex flex-col lg:flex-row lg:space-x-6 lg:overflow-x-auto
+                lg:pb-6 lg:px-2 lg:-mx-2 lg:[&::-webkit-scrollbar]:h-2
+                lg:[&::-webkit-scrollbar-track]:bg-gray-100
+                lg:[&::-webkit-scrollbar-thumb]:bg-gray-300 lg:[&::-webkit-scrollbar-thumb]:rounded-full
+                    space-y-4 lg:space-y-0">
+
+                        {columns.map((column) => (
+                            <DroppableColumn
+                                key={column.id}
+                                column={column}
+                                onCreateTask={handleCreateTask}
+                                onEditColumn={() => { }}
+                            >
+                                <SortableContext items={column.tasks.map((task) => task.id)}
+                                //strategy={}
+                                >
+                                    <div className="space-y-3">
+                                        {column.tasks.map((task) => (
+                                            <SortableTaskCard task={task} key={task.id} />
+                                        ))}
+                                    </div>
+                                </SortableContext>
+                            </DroppableColumn>
+                        ))}
+                    </div>
+                </DndContext>
             </main>
         </div>
     );
