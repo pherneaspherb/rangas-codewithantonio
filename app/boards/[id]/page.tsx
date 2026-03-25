@@ -15,25 +15,54 @@ import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, rectIntersection, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
+import {
+    closestCenter,
+    DndContext,
+    DragEndEvent,
+    DragOverEvent,
+    DragOverlay,
+    DragStartEvent,
+    PointerSensor,
+    pointerWithin,
+    useDroppable,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-function DroppableColumn({ column, children, onCreateTask, onEditColumn }: {
+function DroppableColumn({
+    column,
+    children,
+    onCreateTask,
+    onEditColumn,
+    isDraggingTask,
+}: {
     column: ColumnWithTasks;
     children: React.ReactNode;
     onCreateTask: (taskData: any) => Promise<void>;
     onEditColumn: (column: ColumnWithTasks) => void;
+    isDraggingTask: boolean;
 }) {
 
-    const { setNodeRef, isOver } = useDroppable({ id: column.id });
+    const { setNodeRef, isOver } = useDroppable({
+        id: column.id,
+    });
+
+    console.log("COLUMN:", column.id, "isOver:", isOver);
 
     return (
-        <div ref={setNodeRef}
-            className={`w-full lg:-shrink-0 lg:w-80
-        ${isOver ? "bg-blue-50 rounded-lg" : ""
-                }`}>
-            <div className="bg-white rounded-lg  shadow-sm border">
+        <div
+            ref={setNodeRef}
+            className="w-full lg:-shrink-0 lg:w-80"
+        >
+            <div
+                className={`bg-white rounded-lg shadow-sm border-2 transition-all duration-200
+    ${isDraggingTask && isOver
+                        ? "border-blue-500 ring-4 ring-blue-100 bg-blue-50/30"
+                        : "border-gray-200"
+                    }`}
+            >
                 <div className="p-3 sm:p-4 border-b">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2 min-w-0">
@@ -408,43 +437,78 @@ export default function BoardPage() {
         const activeId = active.id as string;
         const overId = over.id as string;
 
-        const sourceColumn = columns.find((col) =>
-            col.tasks.some((task) => task.id === activeId)
-        );
+        if (activeId === overId) return;
 
-        const targetColumn = columns.find((col) =>
-            col.tasks.some((task) => task.id === overId)
-        );
-
-        if (!sourceColumn || !targetColumn) return;
-
-        if (sourceColumn.id === targetColumn.id) {
-            const activeIndex = sourceColumn.tasks.findIndex(
-                (task) => task.id === activeId
+        setColumns((prev) => {
+            const sourceColumn = prev.find((col) =>
+                col.tasks.some((task) => task.id === activeId)
             );
 
-            const overIndex = sourceColumn.tasks.findIndex(
-                (task) => task.id === overId
+            if (!sourceColumn) return prev;
+
+            const activeTask = sourceColumn.tasks.find((task) => task.id === activeId);
+            if (!activeTask) return prev;
+
+            const targetColumnDirect = prev.find((col) => col.id === overId);
+
+            const targetColumnFromTask = prev.find((col) =>
+                col.tasks.some((task) => task.id === overId)
             );
 
-            if (activeIndex === -1 || overIndex === -1) return;
-            if (activeIndex === overIndex) return;
+            const targetColumn = targetColumnDirect || targetColumnFromTask;
+            if (!targetColumn) return prev;
 
-            setColumns((prev: ColumnWithTasks[]) => {
-                return prev.map((col) => {
-                    if (col.id !== sourceColumn.id) return col;
+            const sourceColumnIndex = prev.findIndex((col) => col.id === sourceColumn.id);
+            const targetColumnIndex = prev.findIndex((col) => col.id === targetColumn.id);
 
-                    const tasks = [...col.tasks];
-                    const [movedTask] = tasks.splice(activeIndex, 1);
-                    tasks.splice(overIndex, 0, movedTask);
+            const activeIndex = sourceColumn.tasks.findIndex((task) => task.id === activeId);
 
-                    return {
-                        ...col,
-                        tasks,
-                    };
-                });
-            });
-        }
+            let overIndex = targetColumn.tasks.findIndex((task) => task.id === overId);
+
+            // dropping directly onto empty column / column container
+            if (targetColumnDirect) {
+                overIndex = targetColumn.tasks.length;
+            }
+
+            if (sourceColumn.id === targetColumn.id) {
+                if (activeIndex === overIndex || activeIndex === -1 || overIndex === -1) {
+                    return prev;
+                }
+
+                const newColumns = [...prev];
+                const column = { ...newColumns[sourceColumnIndex] };
+                const tasks = [...column.tasks];
+
+                const [movedTask] = tasks.splice(activeIndex, 1);
+                tasks.splice(overIndex, 0, movedTask);
+
+                column.tasks = tasks;
+                newColumns[sourceColumnIndex] = column;
+
+                return newColumns;
+            }
+
+            const newColumns = [...prev];
+
+            const newSourceColumn = { ...newColumns[sourceColumnIndex] };
+            const newTargetColumn = { ...newColumns[targetColumnIndex] };
+
+            const sourceTasks = [...newSourceColumn.tasks];
+            const targetTasks = [...newTargetColumn.tasks];
+
+            const [movedTask] = sourceTasks.splice(activeIndex, 1);
+            if (!movedTask) return prev;
+
+            targetTasks.splice(overIndex, 0, movedTask);
+
+            newSourceColumn.tasks = sourceTasks;
+            newTargetColumn.tasks = targetTasks;
+
+            newColumns[sourceColumnIndex] = newSourceColumn;
+            newColumns[targetColumnIndex] = newTargetColumn;
+
+            return newColumns;
+        });
     }
 
 
@@ -694,7 +758,10 @@ export default function BoardPage() {
 
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={rectIntersection}
+                    collisionDetection={(args) => {
+                        const pointerCollisions = pointerWithin(args);
+                        return pointerCollisions.length > 0 ? pointerCollisions : closestCenter(args);
+                    }}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
@@ -713,6 +780,7 @@ export default function BoardPage() {
                                 column={column}
                                 onCreateTask={handleCreateTask}
                                 onEditColumn={() => { }}
+                                isDraggingTask={!!activeTask}
                             >
                                 <SortableContext items={column.tasks.map((task) => task.id)}
                                     strategy={verticalListSortingStrategy}
@@ -727,7 +795,7 @@ export default function BoardPage() {
                         ))}
 
                         <DragOverlay>
-                            {activeTask ? <SortableTaskCard task={activeTask} /> : null}
+                            {activeTask ? <TaskOverlayfunction task={activeTask} /> : null}
                         </DragOverlay>
                     </div>
                 </DndContext>
