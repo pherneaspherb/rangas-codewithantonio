@@ -208,18 +208,40 @@ export function useBoard(boardId: string) {
     async function createColumn(title: string) {
         if (!board || !user) throw new Error("Board not loaded")
 
-            try {
-                const newColumn = await columnService.createColumn(supabase!, {
-                    title, 
-                    board_id: board.id, 
-                    sort_order: columns.length,
-                    user_id: user.id,
-                });
+        try {
+            const newColumn = await columnService.createColumn(supabase!, {
+                title,
+                board_id: board.id,
+                sort_order: columns.length,
+                user_id: user.id,
+            });
 
-                setColumns((prev) => [...prev, { ...newColumn, tasks: []}]);
-                return newColumn
-            } catch (err) {
+            setColumns((prev) => [...prev, { ...newColumn, tasks: [] }]);
+            return newColumn
+        } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to create column.");
+        }
+    }
+
+    async function updateColumn(columnId: string, title: string) {
+        try {
+            const updatedColumn = await columnService.updateColumnTitle(
+                supabase!,
+                columnId,
+                title
+            );
+
+            setColumns((prev) =>
+                prev.map((col) =>
+                    col.id === columnId
+                        ? { ...col, title: updatedColumn.title }
+                        : col
+                )
+            );
+
+            return updatedColumn;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to update column.");
         }
     }
 
@@ -233,5 +255,6 @@ export function useBoard(boardId: string) {
         setColumns,
         moveTask,
         createColumn,
+        updateColumn,
     };
 }
