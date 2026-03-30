@@ -72,7 +72,12 @@ function DroppableColumn({
                                 {column.tasks.length}
                             </Badge>
                         </div>
-                        <Button variant="ghost" size="sm" className="shrink-0">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => onEditColumn(column)}
+                        >
                             <MoreHorizontal />
                         </Button>
                     </div>
@@ -331,7 +336,7 @@ function TaskOverlayfunction({ task }: { task: TaskType }) {
 
 export default function BoardPage() {
     const { id } = useParams<{ id: string }>();
-    const { board, updateBoard, columns, createRealTask, setColumns, moveTask } = useBoard(id);
+    const { board, createColumn, updateBoard, columns, createRealTask, setColumns, moveTask } = useBoard(id);
 
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [newTitle, setNewTitle] = useState("");
@@ -340,7 +345,10 @@ export default function BoardPage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isCreatingColumn, setIsCreatingColumn] = useState(false);
     const [isEditingColumn, setIsEditingColumn] = useState(false);
+
     const [newColumnTitle, setNewColumnTitle] = useState("");
+    const [editingColumnTitle, setEditingColumnTitle] = useState("");
+    const [editingColumn, setEditingColumn] = useState<ColumnWithTasks | null>(null);
 
     const [activeTask, setActiveTask] = useState<TaskType | null>(null);
 
@@ -413,7 +421,7 @@ export default function BoardPage() {
                 console.log("created task:", result);
 
                 const trigger = document.querySelector(
-                    '[data-state="open"'
+                    '[data-state="open]"'
                 ) as HTMLElement;
                 if (trigger) trigger.click();
             }
@@ -556,6 +564,35 @@ export default function BoardPage() {
             }
         }
     }
+
+    async function handleCreateColumn(e: React.FormEvent) {
+        e.preventDefault();
+
+        if (!newColumnTitle.trim()) return;
+
+        await createColumn(newColumnTitle.trim());
+
+        setNewColumnTitle("");
+        setIsCreatingColumn(false);
+    }
+
+    async function handleUpdateColumn(e: React.FormEvent) {
+        e.preventDefault();
+
+        if (!newColumnTitle.trim()) return;
+
+        await createColumn(newColumnTitle.trim());
+
+        setNewColumnTitle("");
+        setIsCreatingColumn(false);
+    }
+
+    function handleEditColumn(column: ColumnWithTasks) {
+        setIsEditingColumn(true);
+        setEditingColumn(column);
+        setEditingColumnTitle(column.title)
+    }
+
 
     return (
         <>
@@ -783,7 +820,7 @@ export default function BoardPage() {
                                     key={column.id}
                                     column={column}
                                     onCreateTask={handleCreateTask}
-                                    onEditColumn={() => { }}
+                                    onEditColumn={handleEditColumn} 
                                     isDraggingTask={!!activeTask}
                                 >
                                     <SortableContext items={column.tasks.map((task) => task.id)}
@@ -796,11 +833,16 @@ export default function BoardPage() {
                                         </div>
                                     </SortableContext>
                                 </DroppableColumn>
-                            ))} 
+                            ))}
 
                             <div className="w-full lg:shrink-0 lg:w-80">
-                                <Button variant="outline" className="w-full h-full min-h-50 border-dashed border-2 text-gray-500 hover:text-gray-700">
+                                <Button
+                                    variant="outline"
+                                    className="w-full h-full min-h-50 border-dashed border-2 text-gray-500 hover:text-gray-700"
+                                    onClick={() => setIsCreatingColumn(true)}
+                                >
                                     <Plus />
+                                    Add another list
                                 </Button>
                             </div>
 
@@ -815,9 +857,67 @@ export default function BoardPage() {
             <Dialog open={isCreatingColumn} onOpenChange={setIsCreatingColumn}>
                 <DialogContent className="w-[95vw] max-w-425px mx-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit Board</DialogTitle>
+                        <DialogTitle>Create New Column</DialogTitle>
+                        <p className="text-sm text-gray-600">
+                            Add new column to organize your tasks
+                        </p>
                     </DialogHeader>
+                    <form className="space-y-4" onSubmit={handleCreateColumn}>
+                        <div className="space-y-2">
+                            <Label>Column Title</Label>
+                            <Input id="columnTitle" value={newColumnTitle} onChange={(e) => setNewColumnTitle(e.target.value)}
+                                placeholder="Enter column title..."
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2 flex justify-end">
+                            <Button
+                                type="button"
+                                onClick={() => setIsCreatingColumn(false)}
+                                variant="outline"
+                            >
+                                Cancel
+                            </Button>
+                            <Button>Create Column</Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
+            <Dialog open={isEditingColumn} onOpenChange={setIsEditingColumn}>
+                <DialogContent className="w-[95vw] max-w-425px mx-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit Column</DialogTitle>
+                        <p className="text-sm text-gray-600">
+                            Update the title of your column
+                        </p>
+                    </DialogHeader>
+                    <form className="space-y-4" onSubmit={handleUpdateColumn}>
+                        <div className="space-y-2">
+                            <Label>Column Title</Label>
+                            <Input
+                                id="columnTitle"
+                                value={editingColumnTitle}
+                                onChange={(e) => setEditingColumnTitle(e.target.value)}
+                                placeholder="Enter column title..."
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2 flex justify-end">
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    setIsEditingColumn(false)
+                                    setEditingColumnTitle("")
+                                    setEditingColumn(null)
+                                }}
+                                variant="outline"
+                            >
+                                Cancel
+                            </Button>
+                            <Button>Create Column</Button>
+                        </div>
+                    </form>
                 </DialogContent>
             </Dialog>
         </>

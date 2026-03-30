@@ -65,6 +65,7 @@ export function useBoards() {
 
 export function useBoard(boardId: string) {
     const { supabase } = useSupabase();
+    const { user } = useUser();
     const [board, setBoard] = useState<Board | null>(null);
     const [columns, setColumns] = useState<ColumnWithTasks[]>([]);
     const [loading, setLoading] = useState(true);
@@ -204,6 +205,24 @@ export function useBoard(boardId: string) {
         }
     }
 
+    async function createColumn(title: string) {
+        if (!board || !user) throw new Error("Board not loaded")
+
+            try {
+                const newColumn = await columnService.createColumn(supabase!, {
+                    title, 
+                    board_id: board.id, 
+                    sort_order: columns.length,
+                    user_id: user.id,
+                });
+
+                setColumns((prev) => [...prev, { ...newColumn, tasks: []}]);
+                return newColumn
+            } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to create column.");
+        }
+    }
+
     return {
         board,
         columns,
@@ -212,6 +231,7 @@ export function useBoard(boardId: string) {
         updateBoard,
         createRealTask,
         setColumns,
-        moveTask
+        moveTask,
+        createColumn,
     };
 }
