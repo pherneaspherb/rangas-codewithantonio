@@ -376,6 +376,14 @@ export default function BoardPage() {
             }));
         }
 
+    function clearFilters() {
+        setFilters({
+        priority: [] as string[],
+        assignee: [] as string[],
+        dueDate: [] as string[] | null,
+    })
+    }    
+
     async function handleUpdateBoard(e: React.FormEvent) {
         e.preventDefault();
 
@@ -610,18 +618,23 @@ export default function BoardPage() {
         setEditingColumnTitle(column.title)
     }
 
-
     return (
         <>
             <div className="min-h-screen bg-gray-50">
                 {" "}
-                <Navbar boardTitle={board?.title} onEditBoard={() => {
+                <Navbar 
+                boardTitle={board?.title} 
+                onEditBoard={() => {
                     setNewTitle(board?.title ?? "")
                     setNewColor(board?.color ?? "")
                     setIsEditingTitle(true);
                 }}
                     onFilterClick={() => setIsFilterOpen(true)}
-                    filterCount={2}
+                    filterCount={Object.values(filters).reduce(
+                        (count, v) =>
+                            count + (Array.isArray(v) ? v.length : v !== null ? 1 : 0),
+                        0
+                    )}
                 />
 
                 <Dialog open={isEditingTitle} onOpenChange={setIsEditingTitle}>
@@ -709,23 +722,19 @@ export default function BoardPage() {
                                 </div>
                             </div>
 
-                            {/* <div className="space-y-2">
-                            <Label>Assignee</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {["low", "medium", "high"].map((priority, key) => (
-                                    <Button key={key} variant={"outline"} size="sm">
-                                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div> */}
                             <div className="space-y-2">
                                 <Label>Due Date</Label>
-                                <Input type="date" />
+                                <Input 
+                                type="date" 
+                                value={filters.dueDate || ""} 
+                                onChange={(e) => 
+                                handleFilterChange("dueDate",  e.target.value || null)
+                                }
+                                />
                             </div>
 
                             <div className="flex justify-between pt-4">
-                                <Button type="button" variant={"outline"}>
+                                <Button type="button" variant={"outline"} onClick={clearFilters}>
                                     Clear Filters
                                 </Button>
                                 <Button type="button" onClick={() => setIsFilterOpen(false)}>
