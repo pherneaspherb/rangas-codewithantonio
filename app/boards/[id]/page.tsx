@@ -352,13 +352,29 @@ export default function BoardPage() {
 
     const [activeTask, setActiveTask] = useState<TaskType | null>(null);
 
+    const [filters, setFilters] = useState({
+        priority: [] as string[],
+        assignee: [] as string[],
+        dueDate: [] as string[] | null,
+    });
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
                 distance: 8,
             }
         })
-    )
+    );
+
+    function handleFilterChange(
+        type: "priority" | "assignee" | "dueDate", 
+        value: string | string[] | null)
+        {
+            setFilters((prev) => ({
+                ...prev,
+                [type]: value,
+            }));
+        }
 
     async function handleUpdateBoard(e: React.FormEvent) {
         e.preventDefault();
@@ -677,7 +693,16 @@ export default function BoardPage() {
                                 <Label>Priority</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {["low", "medium", "high"].map((priority, key) => (
-                                        <Button key={key} variant={"outline"} size="sm">
+                                        <Button onClick={() => {
+                                            const newPriorities =
+                                            filters.priority.includes(priority) ? filters.priority.filter((p) => p !== priority) : [...filters.priority, priority];
+
+                                            handleFilterChange("priority", newPriorities);
+                                        }}
+                                        key={key}
+                                        variant={filters.priority.includes(priority) ? "default" : "outline"}
+                                        size="sm"
+                                        >
                                             {priority.charAt(0).toUpperCase() + priority.slice(1)}
                                         </Button>
                                     ))}
