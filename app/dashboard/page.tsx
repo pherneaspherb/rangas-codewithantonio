@@ -3,12 +3,34 @@
 import Navbar from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // ✅ add CardContent
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"; // ✅ add CardContent
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
-import { Activity, Filter, Grid3x3, List, Loader2, Plus, Rocket, Search, Trello } from "lucide-react";
+import {
+  Activity,
+  Filter,
+  Grid3x3,
+  List,
+  Loader2,
+  Plus,
+  Rocket,
+  Search,
+  Trello,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -16,7 +38,7 @@ export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const { boards, loading, error, createBoard } = useBoards();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false)
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
   if (!isLoaded) return <div>Loading user...</div>;
   if (!user) return <div>Please sign in to view your boards.</div>;
@@ -59,7 +81,6 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-
                 {/* Left side */}
                 <div>
                   <p className="text-sm text-gray-500">Total Boards</p>
@@ -70,7 +91,6 @@ export default function DashboardPage() {
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Trello className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
-
               </div>
             </CardContent>
           </Card>
@@ -78,7 +98,6 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-
                 {/* Left side */}
                 <div>
                   <p className="text-sm text-gray-500">Recent Activity</p>
@@ -105,7 +124,6 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-
                 {/* Left side */}
                 <div>
                   <p className="text-sm text-gray-500">Active Projects</p>
@@ -116,7 +134,6 @@ export default function DashboardPage() {
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
-
               </div>
             </CardContent>
           </Card>
@@ -124,7 +141,6 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-
                 {/* Left side */}
                 <div>
                   <p className="text-sm text-gray-500">Active Projects</p>
@@ -135,7 +151,6 @@ export default function DashboardPage() {
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
-
               </div>
             </CardContent>
           </Card>
@@ -160,7 +175,9 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: title + description */}
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Your Boards</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Your Boards
+              </h2>
               <p className="text-gray-600">Manage your projects and tasks</p>
             </div>
 
@@ -172,23 +189,34 @@ export default function DashboardPage() {
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="icon"
                   onClick={() => setViewMode("grid")}
-                  className={viewMode === "grid" ? "bg-black hover:bg-gray-800" : ""}
+                  className={
+                    viewMode === "grid" ? "bg-black hover:bg-gray-800" : ""
+                  }
                 >
-                  <Grid3x3 className={viewMode === "grid" ? "text-white" : ""} />
+                  <Grid3x3
+                    className={viewMode === "grid" ? "text-white" : ""}
+                  />
                 </Button>
 
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="icon"
                   onClick={() => setViewMode("list")}
-                  className={viewMode === "list" ? "bg-black hover:bg-gray-800" : ""}
+                  className={
+                    viewMode === "list" ? "bg-black hover:bg-gray-800" : ""
+                  }
                 >
                   <List className={viewMode === "list" ? "text-white" : ""} />
                 </Button>
               </div>
 
               {/* Filter button */}
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsFilterOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsFilterOpen(true)}
+              >
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
@@ -217,98 +245,148 @@ export default function DashboardPage() {
               <div className="mt-6">No boards yet</div>
             ) : viewMode === "grid" ? (
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {boards.map((board, key) => (   
-                <Link href={`/boards/${board.id}`} key={key}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className={`w-4 h-4 ${board.color} rounded`} />
-                        <Badge className="text-xs" variant="secondary">
-                          New
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6">
-                      <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">{board.title}</CardTitle>
-                      <CardDescription className="text-sm mb-4">{board.description}</CardDescription>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
-                        <span>
-                          Created{" "}
-                          {new Date(board.created_at).toLocaleDateString()}
-                        </span>
-                        <span>
-                          Updated{" "}
-                          {new Date(board.updated_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>            
-              ))}
+                {boards.map((board, key) => (
+                  <Link href={`/boards/${board.id}`} key={key}>
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className={`w-4 h-4 ${board.color} rounded`} />
+                          <Badge className="text-xs" variant="secondary">
+                            New
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6">
+                        <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
+                          {board.title}
+                        </CardTitle>
+                        <CardDescription className="text-sm mb-4">
+                          {board.description}
+                        </CardDescription>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
+                          <span>
+                            Created{" "}
+                            {new Date(board.created_at).toLocaleDateString()}
+                          </span>
+                          <span>
+                            Updated{" "}
+                            {new Date(board.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
 
-              <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group">
-                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-50[200px]">
-                  <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2"/>
-                  <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">Create new board</p>
-                </CardContent>
-              </Card>
+                <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group">
+                  <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-50[200px]">
+                    <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
+                    <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
+                      Create new board
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             ) : (
-              
               <div>
                 {boards.map((board, key) => (
-                  <div key={key} className={key > 0 ? "mt-4" : ""}> 
-                <Link href={`/boards/${board.id}`}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className={`w-4 h-4 ${board.color} rounded`} />
-                        <Badge className="text-xs" variant="secondary">
-                          New
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6">
-                      <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">{board.title}</CardTitle>
-                      <CardDescription className="text-sm mb-4">{board.description}</CardDescription>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
-                        <span>
-                          Created{" "}
-                          {new Date(board.created_at).toLocaleDateString()}
-                        </span>
-                        <span>
-                          Updated{" "}
-                          {new Date(board.updated_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-                </div>
-              ))}
+                  <div key={key} className={key > 0 ? "mt-4" : ""}>
+                    <Link href={`/boards/${board.id}`}>
+                      <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className={`w-4 h-4 ${board.color} rounded`} />
+                            <Badge className="text-xs" variant="secondary">
+                              New
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-6">
+                          <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
+                            {board.title}
+                          </CardTitle>
+                          <CardDescription className="text-sm mb-4">
+                            {board.description}
+                          </CardDescription>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
+                            <span>
+                              Created{" "}
+                              {new Date(board.created_at).toLocaleDateString()}
+                            </span>
+                            <span>
+                              Updated{" "}
+                              {new Date(board.updated_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </div>
+                ))}
 
-              <Card className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group">
-                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-50[200px]">
-                  <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2"/>
-                  <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">Create new board</p>
-                </CardContent>
-              </Card>
+                <Card className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group">
+                  <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-50[200px]">
+                    <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
+                    <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
+                      Create new board
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>
         </div>
-
-      </main >
+      </main>
 
       {/*Filter Dialog*/}
-      
-     <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <DialogContent className="w-[95vw] max-w-425px mx-auto">
-          <DialogTitle>
-            <p className="text-sm text-gray-600">Filter boards by title, date, or task count.</p>
-          </DialogTitle>
+          <DialogHeader>
+            <DialogTitle>Filter Boards</DialogTitle>
+            <p className="text-sm text-gray-600">
+              Filter boards by title, date, or task count.
+            </p>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Search</Label>
+              <Input id="search" placeholder="Search board titles..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Date Range</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Start Range</Label>
+                  <Input type="date" />
+                </div>
+                <div>
+                  <Label className="text-xs">End Range</Label>
+                  <Input type="date" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Task Count</Label>
+              <div>
+                <div>
+                  <Label className="text-xs">Minimum</Label>
+                  <Input type="number" min="0" placeholder="Min tasks" />
+                </div>
+                <div>
+                  <Label className="text-xs">Maximum</Label>
+                  <Input type="number" min="0" placeholder="Max tasks" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between pt-4 space-y-2 sm:space-y-0 sm:space-x-2">
+              <Button variant="outline">Clear Filters</Button>
+              <Button>Apply Filters</Button>
+            </div>
+          </div>
         </DialogContent>
-     </Dialog>
-    </div >
+      </Dialog>
+    </div>
   );
 }
