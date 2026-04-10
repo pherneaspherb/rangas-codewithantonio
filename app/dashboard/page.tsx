@@ -4,6 +4,7 @@ import Navbar from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // ✅ add CardContent
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const { boards, loading, error, createBoard } = useBoards();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false)
 
   if (!isLoaded) return <div>Loading user...</div>;
   if (!user) return <div>Please sign in to view your boards.</div>;
@@ -186,7 +188,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Filter button */}
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsFilterOpen(true)}>
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
@@ -297,6 +299,16 @@ export default function DashboardPage() {
         </div>
 
       </main >
+
+      {/*Filter Dialog*/}
+      
+     <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent className="w-[95vw] max-w-425px mx-auto">
+          <DialogTitle>
+            <p className="text-sm text-gray-600">Filter boards by title, date, or task count.</p>
+          </DialogTitle>
+        </DialogContent>
+     </Dialog>
     </div >
   );
 }
