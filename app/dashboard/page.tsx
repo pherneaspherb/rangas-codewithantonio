@@ -58,7 +58,10 @@ export default function DashboardPage() {
       .toLowerCase()
       .includes(filters.search.toLowerCase());
 
-    return matchesSearch;
+    const matchesDateRange =
+      !filters.dateRange.start ||
+      new Date(board.created_at) >= new Date(filters.dateRange.start);
+    return matchesSearch && matchesDateRange;
   });
 
   if (!isLoaded) return <div>Loading user...</div>;
