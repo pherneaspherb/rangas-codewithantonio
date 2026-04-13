@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePlan } from "@/lib/contexts/PlanContext";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { Board } from "@/lib/supabase/models";
 import { useUser } from "@clerk/nextjs";
@@ -33,13 +34,17 @@ import {
   Trello,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const { boards, loading, error, createBoard } = useBoards();
+  const router = useRouter();
+  const { isFreeUser } = usePlan();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState<boolean>(false);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -52,6 +57,8 @@ export default function DashboardPage() {
       max: null as number | null,
     },
   });
+
+  const canCreateBoard = !isFreeUser || boards.length < 1;
 
   const boardsWithTaskCount = boards.map((board: Board) => ({
     ...board,
@@ -98,6 +105,10 @@ export default function DashboardPage() {
   if (error) return <div>Error: {error}</div>;
 
   const handleCreateBoard = async () => {
+    if (!canCreateBoard) {
+      setShowUpgradeDialog(true);
+      return;
+    }
     await createBoard({ title: "New Board" });
   };
 
@@ -220,6 +231,11 @@ export default function DashboardPage() {
                 Your Boards
               </h2>
               <p className="text-gray-600">Manage your projects and tasks</p>
+              {isFreeUser && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Free plan: {boards.length}/1 boards used
+                </p>
+              )}
             </div>
 
             {/* Right: controls (match screenshot) */}
@@ -489,6 +505,27 @@ export default function DashboardPage() {
                 Apply Filters
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="w-[95vw] max-w-425px mx-auto">
+          <DialogHeader>
+            <DialogTitle>Upgrade to Create More Boards</DialogTitle>
+            <p className="text-sm text-gray-600">
+              Free users can only create one board. Upgrade to Pro or Enterprise
+              to create unlimited boards.
+            </p>
+          </DialogHeader>
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowUpgradeDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => router.push("/pricing")}>View Plans</Button>
           </div>
         </DialogContent>
       </Dialog>
