@@ -53,16 +53,38 @@ export default function DashboardPage() {
     },
   });
 
-  const filteredBoards = boards.filter((board: Board) => {
+  const boardsWithTaskCount = boards.map((board: Board) => ({
+    ...board,
+    taskCount: 0,
+  }));
+
+  const filteredBoards = boardsWithTaskCount.filter((board: Board) => {
     const matchesSearch = board.title
       .toLowerCase()
       .includes(filters.search.toLowerCase());
 
     const matchesDateRange =
-      !filters.dateRange.start ||
-      new Date(board.created_at) >= new Date(filters.dateRange.start);
+      (!filters.dateRange.start ||
+        new Date(board.created_at) >= new Date(filters.dateRange.start)) &&
+      (!filters.dateRange.end ||
+        new Date(board.created_at) <= new Date(filters.dateRange.end));
+
     return matchesSearch && matchesDateRange;
   });
+
+  function clearFilters() {
+    setFilters({
+      search: "",
+      dateRange: {
+        start: null as string | null,
+        end: null as string | null,
+      },
+      taskCount: {
+        min: null as number | null,
+        max: null as number | null,
+      },
+    });
+  }
 
   if (!isLoaded) return <div>Loading user...</div>;
   if (!user) return <div>Please sign in to view your boards.</div>;
@@ -92,11 +114,6 @@ export default function DashboardPage() {
           <p className="text-gray-600 mb-4">
             Here's what's happening with your boards today.
           </p>
-
-          <Button className="w-full sm:w-auto" onClick={handleCreateBoard}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Board
-          </Button>
         </div>
 
         {/* ✅ STATS (this is what the tutorial shows) */}
@@ -465,8 +482,12 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between pt-4 space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button variant="outline">Clear Filters</Button>
-              <Button>Apply Filters</Button>
+              <Button variant="outline" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+              <Button onClick={() => setIsFilterOpen(false)}>
+                Apply Filters
+              </Button>
             </div>
           </div>
         </DialogContent>
