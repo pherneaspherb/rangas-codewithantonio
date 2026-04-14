@@ -99,13 +99,85 @@ export default function DashboardPage() {
 
   if (!isLoaded) return <div>Loading user...</div>;
   if (!user) return <div>Please sign in to view your boards.</div>;
-  if (loading)
+  if (loading) {
     return (
-      <div>
-        <Loader2 className="animate-spin inline-block mr-2" />
-        Loading your boards...
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+
+        <main className="container mx-auto px-4 py-6 sm:py-8 animate-pulse">
+          <div className="mb-6 sm:mb-8">
+            <div className="h-8 w-72 rounded-md bg-gray-200 mb-3" />
+            <div className="h-4 w-56 rounded-md bg-gray-200" />
+          </div>
+
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-3">
+                      <div className="h-4 w-24 rounded bg-gray-200" />
+                      <div className="h-8 w-12 rounded bg-gray-200" />
+                    </div>
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-gray-200" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Header skeleton */}
+          <div className="mt-8 sm:mt-12">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-3">
+                <div className="h-7 w-40 rounded bg-gray-200" />
+                <div className="h-4 w-52 rounded bg-gray-200" />
+                <div className="h-4 w-36 rounded bg-gray-200" />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-24 rounded-lg bg-gray-200" />
+                <div className="h-10 w-20 rounded-lg bg-gray-200" />
+                <div className="h-10 w-32 rounded-lg bg-gray-200" />
+              </div>
+            </div>
+
+            {/* Search skeleton */}
+            <div className="mt-4 h-10 w-full rounded-lg bg-gray-200" />
+
+            {/* Boards skeleton */}
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-4 rounded bg-gray-200" />
+                      <div className="h-5 w-10 rounded-full bg-gray-200" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="h-5 w-32 rounded bg-gray-200 mb-3" />
+                    <div className="h-4 w-full rounded bg-gray-200 mb-2" />
+                    <div className="h-4 w-3/4 rounded bg-gray-200 mb-4" />
+                    <div className="flex justify-between gap-3">
+                      <div className="h-3 w-20 rounded bg-gray-200" />
+                      <div className="h-3 w-20 rounded bg-gray-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="mt-6 flex items-center justify-center text-sm text-gray-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading your boards...
+            </div>
+          </div>
+        </main>
       </div>
     );
+  }
   if (error) return <div>Error: {error}</div>;
 
   const handleCreateBoard = () => {
@@ -371,7 +443,7 @@ export default function DashboardPage() {
 
                 <Card
                   onClick={handleCreateBoard}
-                  className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group"
+                  className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group"
                 >
                   <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
                     <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
@@ -418,7 +490,10 @@ export default function DashboardPage() {
                   </div>
                 ))}
 
-                <Card className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group">
+                <Card
+                  onClick={handleCreateBoard}
+                  className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group"
+                >
                   <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-50[200px]">
                     <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
                     <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">

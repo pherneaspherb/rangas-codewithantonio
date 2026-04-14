@@ -40,7 +40,7 @@ export default function SupabaseProvider({
           const token = await session.getToken({ template: "supabase" });
           return token ?? null;
         },
-      }
+      },
     );
 
     setSupabase(client);
@@ -49,7 +49,24 @@ export default function SupabaseProvider({
 
   return (
     <Context.Provider value={{ supabase, isLoaded }}>
-      {!isLoaded ? <div>Loading...</div> : children}
+      {!isLoaded ? (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm border">
+              <div className="h-6 w-6 rounded-md border-4 border-gray-300 border-t-black animate-spin" />
+            </div>
+
+            <h2 className="text-lg font-semibold text-gray-900">
+              Loading workspace
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Setting up your boards and tasks...
+            </p>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
     </Context.Provider>
   );
 }
