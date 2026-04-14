@@ -19,43 +19,33 @@ export default function SupabaseProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { session } = useSession();
+  const { session, isLoaded: isSessionLoaded } = useSession();
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!isSessionLoaded) return;
 
-    async function init() {
-      // Allow app to render even if session is not ready yet
+    if (!session) {
+      setSupabase(null);
       setIsLoaded(true);
-
-      if (!session) {
-        setSupabase(null);
-        return;
-      }
-
-      const token = await session.getToken({ template: "supabase" });
-
-      const client = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          },
-        }
-      );
-
-      if (!cancelled) setSupabase(client);
+      return;
     }
 
-    init();
+    const client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        accessToken: async () => {
+          const token = await session.getToken({ template: "supabase" });
+          return token ?? null;
+        },
+      }
+    );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+    setSupabase(client);
+    setIsLoaded(true);
+  }, [session, isSessionLoaded]);
 
   return (
     <Context.Provider value={{ supabase, isLoaded }}>
@@ -65,6 +55,5 @@ export default function SupabaseProvider({
 }
 
 export const useSupabase = () => {
-  const context = useContext(Context);
-  return context;
+  return useContext(Context);
 };
