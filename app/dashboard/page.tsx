@@ -231,11 +231,22 @@ export default function DashboardPage() {
                 Your Boards
               </h2>
               <p className="text-gray-600">Manage your projects and tasks</p>
-              {isFreeUser && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Free plan: {boards.length}/1 boards used
-                </p>
-              )}
+
+              <p className="text-sm text-gray-500 mt-1">
+                {isFreeUser ? (
+                  <span>
+                    {boards.length}/1 boards used •{" "}
+                    <button
+                      onClick={() => router.push("/pricing")}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Upgrade
+                    </button>
+                  </span>
+                ) : (
+                  `${boards.length} boards used • Unlimited`
+                )}
+              </p>
             </div>
 
             {/* Right: controls (match screenshot) */}
