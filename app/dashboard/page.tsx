@@ -46,6 +46,10 @@ export default function DashboardPage() {
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState<boolean>(false);
 
+  const [showCreateBoardDialog, setShowCreateBoardDialog] = useState(false);
+  const [boardTitle, setBoardTitle] = useState("");
+  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+
   const [filters, setFilters] = useState({
     search: "",
     dateRange: {
@@ -104,12 +108,29 @@ export default function DashboardPage() {
     );
   if (error) return <div>Error: {error}</div>;
 
-  const handleCreateBoard = async () => {
+  const handleCreateBoard = () => {
     if (!canCreateBoard) {
       setShowUpgradeDialog(true);
       return;
     }
-    await createBoard({ title: "New Board" });
+
+    setBoardTitle("");
+    setShowCreateBoardDialog(true);
+  };
+
+  const handleSubmitCreateBoard = async () => {
+    const trimmedTitle = boardTitle.trim();
+
+    if (!trimmedTitle) return;
+
+    try {
+      setIsCreatingBoard(true);
+      await createBoard({ title: trimmedTitle });
+      setShowCreateBoardDialog(false);
+      setBoardTitle("");
+    } finally {
+      setIsCreatingBoard(false);
+    }
   };
 
   return (
@@ -513,6 +534,57 @@ export default function DashboardPage() {
               </Button>
               <Button onClick={() => setIsFilterOpen(false)}>
                 Apply Filters
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showCreateBoardDialog}
+        onOpenChange={setShowCreateBoardDialog}
+      >
+        <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Board</DialogTitle>
+            <p className="text-sm text-gray-600">
+              Enter a name for your new board.
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="boardTitle">Board Name</Label>
+              <Input
+                id="boardTitle"
+                placeholder="e.g. Marketing Plan"
+                value={boardTitle}
+                onChange={(e) => setBoardTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && boardTitle.trim()) {
+                    handleSubmitCreateBoard();
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-4 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCreateBoardDialog(false);
+                  setBoardTitle("");
+                }}
+                disabled={isCreatingBoard}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                onClick={handleSubmitCreateBoard}
+                disabled={!boardTitle.trim() || isCreatingBoard}
+              >
+                {isCreatingBoard ? "Creating..." : "Create Board"}
               </Button>
             </div>
           </div>
