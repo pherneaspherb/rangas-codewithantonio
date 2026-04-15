@@ -22,9 +22,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task as TaskType } from "@/lib/supabase/models";
 import { DialogTrigger } from "@radix-ui/react-dialog";
-import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
+import { AlertTriangle, Calendar, MoreHorizontal, Plus, Sparkles, User } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   closestCenter,
@@ -46,6 +46,136 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+type SmartPriority = "urgent" | "medium" | "low";
+
+type EnhancedTask = TaskType & {
+  smartPriority: SmartPriority;
+  priorityScore: number;
+};
+
+function normalizeDate(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getDaysDifferenceFromToday(dateString?: string | null) {
+  if (!dateString) return null;
+
+  const today = normalizeDate(new Date());
+  const due = normalizeDate(new Date(dateString));
+
+  const diffMs = due.getTime() - today.getTime();
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function getStatusScore(columnTitle: string) {
+  const title = columnTitle.toLowerCase();
+
+  if (title.includes("done")) return 0;
+  if (title.includes("progress") || title.includes("doing")) return 1;
+  if (title.includes("to do") || title.includes("todo") || title.includes("backlog")) return 2;
+
+  return 1;
+}
+
+function getDueDateScore(dueDate?: string | null) {
+  const daysDiff = getDaysDifferenceFromToday(dueDate);
+
+  if (daysDiff === null) return 0;
+  if (daysDiff < 0) return 5; // overdue
+  if (daysDiff === 0) return 4; // today
+  if (daysDiff === 1) return 3; // tomorrow
+  if (daysDiff <= 3) return 2; // soon
+  return 0;
+}
+
+function getManualPriorityScore(priority?: "low" | "medium" | "high") {
+  switch (priority) {
+    case "high":
+      return 2;
+    case "medium":
+      return 1;
+    case "low":
+      return 0;
+    default:
+      return 0;
+  }
+}
+
+function computeSmartPriority(
+  task: TaskType,
+  columnTitle: string,
+): { smartPriority: SmartPriority; priorityScore: number } {
+  const dueDateScore = getDueDateScore(task.due_date);
+  const statusScore = getStatusScore(columnTitle);
+  const manualPriorityScore = getManualPriorityScore(task.priority);
+
+  const totalScore = dueDateScore + statusScore + manualPriorityScore;
+
+  if (totalScore >= 6) {
+    return { smartPriority: "urgent", priorityScore: totalScore };
+  }
+
+  if (totalScore >= 3) {
+    return { smartPriority: "medium", priorityScore: totalScore };
+  }
+
+  return { smartPriority: "low", priorityScore: totalScore };
+}
+
+function getSmartPriorityBadgeClasses(priority: SmartPriority) {
+  switch (priority) {
+    case "urgent":
+      return "bg-red-100 text-red-700 border-red-200";
+    case "medium":
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "low":
+      return "bg-green-100 text-green-700 border-green-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+}
+
+function getSmartPriorityDot(priority: SmartPriority) {
+  switch (priority) {
+    case "urgent":
+      return "bg-red-500";
+    case "medium":
+      return "bg-yellow-500";
+    case "low":
+      return "bg-green-500";
+    default:
+      return "bg-gray-400";
+  }
+}
+
+function getSmartPriorityLabel(priority: SmartPriority) {
+  switch (priority) {
+    case "urgent":
+      return "Urgent";
+    case "medium":
+      return "Medium";
+    case "low":
+      return "Low";
+    default:
+      return "Low";
+  }
+}
+
+function enrichColumnsWithSmartPriority(columns: ColumnWithTasks[]) {
+  return columns.map((column) => ({
+    ...column,
+    tasks: column.tasks.map((task) => {
+      const computed = computeSmartPriority(task, column.title);
+
+      return {
+        ...task,
+        smartPriority: computed.smartPriority,
+        priorityScore: computed.priorityScore,
+      } as EnhancedTask;
+    }),
+  }));
+}
+
 function DroppableColumn({
   column,
   children,
@@ -55,7 +185,7 @@ function DroppableColumn({
 }: {
   column: ColumnWithTasks;
   children: React.ReactNode;
-  onCreateTask: (taskData: any) => Promise<void>;
+  onCreateTask: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
   onEditColumn: (column: ColumnWithTasks) => void;
   isDraggingTask: boolean;
 }) {
@@ -63,17 +193,14 @@ function DroppableColumn({
     id: column.id,
   });
 
-  console.log("COLUMN:", column.id, "isOver:", isOver);
-
   return (
-    <div ref={setNodeRef} className="w-full lg:-shrink-0 lg:w-80">
+    <div ref={setNodeRef} className="w-full lg:shrink-0 lg:w-80">
       <div
-        className={`bg-white rounded-lg shadow-sm border-2 transition-all duration-200
-    ${
-      isDraggingTask && isOver
-        ? "border-blue-500 ring-4 ring-blue-100 bg-blue-50/30"
-        : "border-gray-200"
-    }`}
+        className={`bg-white rounded-lg shadow-sm border-2 transition-all duration-200 ${
+          isDraggingTask && isOver
+            ? "border-blue-500 ring-4 ring-blue-100 bg-blue-50/30"
+            : "border-gray-200"
+        }`}
       >
         <div className="p-3 sm:p-4 border-b">
           <div className="flex items-center justify-between">
@@ -95,20 +222,21 @@ function DroppableColumn({
             </Button>
           </div>
         </div>
-        {/* column content */}
+
         <div className="p-2">
           {children}
+
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full mt-3 text-gray hover:text-gray-900"
+                className="w-full mt-3 text-gray-600 hover:text-gray-900"
               >
                 <Plus />
                 Add Task
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[95vw] max-w-106.25 mx-auto">
+            <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
               <DialogHeader>
                 <DialogTitle>Create New Task</DialogTitle>
                 <p className="text-sm text-gray-600">Add a task to the board</p>
@@ -147,17 +275,18 @@ function DroppableColumn({
                   <Label>Priority</Label>
                   <Select name="priority">
                     <SelectTrigger className="w-full">
-                      <SelectValue />
+                      <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      {["low", "medium", "high"].map((priority, key) => (
-                        <SelectItem key={key} value={priority}>
+                      {["low", "medium", "high"].map((priority) => (
+                        <SelectItem key={priority} value={priority}>
                           {priority.charAt(0).toUpperCase() + priority.slice(1)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div>
                   <Label>Due Date</Label>
                   <Input type="date" id="dueDate" name="dueDate" />
@@ -175,7 +304,7 @@ function DroppableColumn({
   );
 }
 
-function SortableTaskCard({ task }: { task: TaskType }) {
+function SortableTaskCard({ task }: { task: EnhancedTask }) {
   const {
     attributes,
     listeners,
@@ -191,37 +320,37 @@ function SortableTaskCard({ task }: { task: TaskType }) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  function getPriorityColor(priority: "low" | "medium" | "high"): string {
-    switch (priority) {
-      case "high":
-        return "bg-red-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-green-500";
-      default:
-        return "bg-yellow-500";
-    }
-  }
+  const daysDiff = getDaysDifferenceFromToday(task.due_date);
+  const isOverdue = daysDiff !== null && daysDiff < 0;
 
   return (
     <div ref={setNodeRef} style={styles} {...listeners} {...attributes}>
       <Card className="rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <CardContent className="p-4 sm:p-5">
           <div className="space-y-3">
-            {/* Task Header */}
             <div className="flex items-start justify-between gap-2">
               <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug flex-1">
                 {task.title}
               </h4>
+
+              <Badge
+                className={`border ${getSmartPriorityBadgeClasses(task.smartPriority)}`}
+              >
+                {getSmartPriorityLabel(task.smartPriority)}
+              </Badge>
             </div>
 
-            {/* Task Description */}
             <p className="text-sm text-gray-500 line-clamp-2">
               {task.description || "No description."}
             </p>
 
-            {/* Task Meta */}
+            {isOverdue && (
+              <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Overdue task
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-3 pt-1">
               <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
@@ -242,7 +371,7 @@ function SortableTaskCard({ task }: { task: TaskType }) {
               </div>
 
               <div
-                className={`h-2.5 w-2.5 rounded-full shrink-0 ${getPriorityColor(task.priority)}`}
+                className={`h-2.5 w-2.5 rounded-full shrink-0 ${getSmartPriorityDot(task.smartPriority)}`}
               />
             </div>
           </div>
@@ -252,37 +381,37 @@ function SortableTaskCard({ task }: { task: TaskType }) {
   );
 }
 
-function TaskOverlayfunction({ task }: { task: TaskType }) {
-  function getPriorityColor(priority: "low" | "medium" | "high"): string {
-    switch (priority) {
-      case "high":
-        return "bg-red-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-green-500";
-      default:
-        return "bg-yellow-500";
-    }
-  }
+function TaskOverlayfunction({ task }: { task: EnhancedTask }) {
+  const daysDiff = getDaysDifferenceFromToday(task.due_date);
+  const isOverdue = daysDiff !== null && daysDiff < 0;
 
   return (
-    <Card className="rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+    <Card className="rounded-2xl border border-gray-200 shadow-sm cursor-pointer">
       <CardContent className="p-4 sm:p-5">
         <div className="space-y-3">
-          {/* Task Header */}
           <div className="flex items-start justify-between gap-2">
             <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug flex-1">
               {task.title}
             </h4>
+
+            <Badge
+              className={`border ${getSmartPriorityBadgeClasses(task.smartPriority)}`}
+            >
+              {getSmartPriorityLabel(task.smartPriority)}
+            </Badge>
           </div>
 
-          {/* Task Description */}
           <p className="text-sm text-gray-500 line-clamp-2">
             {task.description || "No description."}
           </p>
 
-          {/* Task Meta */}
+          {isOverdue && (
+            <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Overdue task
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-3 pt-1">
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 min-w-0">
               <div className="flex items-center gap-1 min-w-0">
@@ -303,7 +432,7 @@ function TaskOverlayfunction({ task }: { task: TaskType }) {
             </div>
 
             <div
-              className={`h-2.5 w-2.5 rounded-full shrink-0 ${getPriorityColor(task.priority)}`}
+              className={`h-2.5 w-2.5 rounded-full shrink-0 ${getSmartPriorityDot(task.smartPriority)}`}
             />
           </div>
         </div>
@@ -336,16 +465,15 @@ export default function BoardPage() {
 
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [editingColumnTitle, setEditingColumnTitle] = useState("");
-  const [editingColumn, setEditingColumn] = useState<ColumnWithTasks | null>(
-    null,
-  );
+  const [editingColumn, setEditingColumn] = useState<ColumnWithTasks | null>(null);
 
-  const [activeTask, setActiveTask] = useState<TaskType | null>(null);
+  const [activeTask, setActiveTask] = useState<EnhancedTask | null>(null);
 
   const [filters, setFilters] = useState({
     priority: [] as string[],
     assignee: [] as string[],
     dueDate: null as string | null,
+    smartPriority: [] as SmartPriority[],
   });
 
   const sensors = useSensors(
@@ -356,9 +484,13 @@ export default function BoardPage() {
     }),
   );
 
+  const columnsWithSmartPriority = useMemo(() => {
+    return enrichColumnsWithSmartPriority(columns);
+  }, [columns]);
+
   function handleFilterChange(
-    type: "priority" | "assignee" | "dueDate",
-    value: string | string[] | null,
+    type: "priority" | "assignee" | "dueDate" | "smartPriority",
+    value: string | string[] | SmartPriority[] | null,
   ) {
     setFilters((prev) => ({
       ...prev,
@@ -368,9 +500,10 @@ export default function BoardPage() {
 
   function clearFilters() {
     setFilters({
-      priority: [] as string[],
-      assignee: [] as string[],
-      dueDate: null as string | null,
+      priority: [],
+      assignee: [],
+      dueDate: null,
+      smartPriority: [],
     });
   }
 
@@ -386,20 +519,6 @@ export default function BoardPage() {
       });
       setIsEditingTitle(false);
     } catch {}
-  }
-
-  async function createTask(taskData: {
-    title: string;
-    description?: string;
-    assignee?: string;
-    dueDate?: string;
-    priority?: "low" | "medium" | "high";
-  }) {
-    const targetColumn = columns[0];
-    if (!targetColumn) {
-      throw new Error("No column available to add task");
-    }
-    await createRealTask(targetColumn.id, taskData);
   }
 
   async function handleCreateTask(e: React.FormEvent<HTMLFormElement>) {
@@ -440,12 +559,12 @@ export default function BoardPage() {
 
   function handleDragStart(event: DragStartEvent) {
     const taskId = event.active.id as string;
-    const task = columns
+    const task = columnsWithSmartPriority
       .flatMap((col) => col.tasks)
       .find((task) => task.id === taskId);
 
     if (task) {
-      setActiveTask(task);
+      setActiveTask(task as EnhancedTask);
     }
   }
 
@@ -465,9 +584,7 @@ export default function BoardPage() {
 
       if (!sourceColumn) return prev;
 
-      const activeTask = sourceColumn.tasks.find(
-        (task) => task.id === activeId,
-      );
+      const activeTask = sourceColumn.tasks.find((task) => task.id === activeId);
       if (!activeTask) return prev;
 
       const targetColumnDirect = prev.find((col) => col.id === overId);
@@ -479,22 +596,13 @@ export default function BoardPage() {
       const targetColumn = targetColumnDirect || targetColumnFromTask;
       if (!targetColumn) return prev;
 
-      const sourceColumnIndex = prev.findIndex(
-        (col) => col.id === sourceColumn.id,
-      );
-      const targetColumnIndex = prev.findIndex(
-        (col) => col.id === targetColumn.id,
-      );
+      const sourceColumnIndex = prev.findIndex((col) => col.id === sourceColumn.id);
+      const targetColumnIndex = prev.findIndex((col) => col.id === targetColumn.id);
 
-      const activeIndex = sourceColumn.tasks.findIndex(
-        (task) => task.id === activeId,
-      );
+      const activeIndex = sourceColumn.tasks.findIndex((task) => task.id === activeId);
 
-      let overIndex = targetColumn.tasks.findIndex(
-        (task) => task.id === overId,
-      );
+      let overIndex = targetColumn.tasks.findIndex((task) => task.id === overId);
 
-      // dropping directly onto empty column / column container
       if (targetColumnDirect) {
         overIndex = targetColumn.tasks.length;
       }
@@ -546,6 +654,8 @@ export default function BoardPage() {
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setActiveTask(null);
+
     if (!over) return;
 
     const taskId = active.id as string;
@@ -561,7 +671,6 @@ export default function BoardPage() {
         await moveTask(taskId, targetColumn.id, targetColumn.tasks.length);
       }
     } else {
-      // Check to see if were dropping on another task
       const sourceColumn = columns.find((col) =>
         col.tasks.some((task) => task.id === taskId),
       );
@@ -571,13 +680,9 @@ export default function BoardPage() {
       );
 
       if (sourceColumn && targetColumn) {
-        const oldIndex = sourceColumn.tasks.findIndex(
-          (task) => task.id === taskId,
-        );
+        const oldIndex = sourceColumn.tasks.findIndex((task) => task.id === taskId);
 
-        const newIndex = targetColumn.tasks.findIndex(
-          (task) => task.id === overId,
-        );
+        const newIndex = targetColumn.tasks.findIndex((task) => task.id === overId);
 
         if (oldIndex !== newIndex) {
           await moveTask(taskId, targetColumn.id, newIndex);
@@ -615,10 +720,9 @@ export default function BoardPage() {
     setEditingColumnTitle(column.title);
   }
 
-  const filteredColumns = columns.map((column) => ({
+  const filteredColumns = columnsWithSmartPriority.map((column) => ({
     ...column,
     tasks: column.tasks.filter((task) => {
-      // Filter by priority
       if (
         filters.priority.length > 0 &&
         !filters.priority.includes(task.priority)
@@ -626,9 +730,23 @@ export default function BoardPage() {
         return false;
       }
 
-      //Filter by due date
+      if (
+        filters.assignee.length > 0 &&
+        !filters.assignee.includes(task.assignee || "")
+      ) {
+        return false;
+      }
 
-      if (filters.dueDate && task.due_date) {
+      if (
+        filters.smartPriority.length > 0 &&
+        !filters.smartPriority.includes(task.smartPriority)
+      ) {
+        return false;
+      }
+
+      if (filters.dueDate) {
+        if (!task.due_date) return false;
+
         const taskDate = new Date(task.due_date).toDateString();
         const filterDate = new Date(filters.dueDate).toDateString();
 
@@ -641,10 +759,28 @@ export default function BoardPage() {
     }),
   }));
 
+  const allEnhancedTasks = columnsWithSmartPriority.flatMap((column) => column.tasks);
+
+  const suggestedTasks = [...allEnhancedTasks]
+    .filter((task) => task.smartPriority !== "low")
+    .sort((a, b) => b.priorityScore - a.priorityScore)
+    .slice(0, 5);
+
+  const urgentCount = allEnhancedTasks.filter(
+    (task) => task.smartPriority === "urgent",
+  ).length;
+
+  const mediumCount = allEnhancedTasks.filter(
+    (task) => task.smartPriority === "medium",
+  ).length;
+
+  const lowCount = allEnhancedTasks.filter(
+    (task) => task.smartPriority === "low",
+  ).length;
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        {" "}
         <Navbar
           boardTitle={board?.title}
           onEditBoard={() => {
@@ -659,8 +795,9 @@ export default function BoardPage() {
             0,
           )}
         />
+
         <Dialog open={isEditingTitle} onOpenChange={setIsEditingTitle}>
-          <DialogContent className="w-[95vw] max-w-425px mx-auto">
+          <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
             <DialogHeader>
               <DialogTitle>Edit Board</DialogTitle>
             </DialogHeader>
@@ -692,15 +829,15 @@ export default function BoardPage() {
                     "bg-teal-500",
                     "bg-cyan-500",
                     "bg-emerald-500",
-                  ].map((color, key) => (
+                  ].map((color) => (
                     <button
-                      key={key}
+                      key={color}
                       type="button"
                       className={`w-8 h-8 rounded-full ${color} ${
                         color === newColor
                           ? "ring-2 ring-offset-2 ring-gray-900"
                           : ""
-                      } `}
+                      }`}
                       onClick={() => setNewColor(color)}
                     />
                   ))}
@@ -720,30 +857,30 @@ export default function BoardPage() {
             </form>
           </DialogContent>
         </Dialog>
+
         <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-          <DialogContent className="w-[95vw] max-w-425px mx-auto">
+          <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
             <DialogHeader>
               <DialogTitle>Filter Tasks</DialogTitle>
               <p className="text-sm text-gray-600">
-                Filter tasks by priority, assignee, or due date
+                Filter tasks by priority, smart priority, assignee, or due date
               </p>
             </DialogHeader>
+
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Priority</Label>
+                <Label>Manual Priority</Label>
                 <div className="flex flex-wrap gap-2">
-                  {["low", "medium", "high"].map((priority, key) => (
+                  {["low", "medium", "high"].map((priority) => (
                     <Button
+                      key={priority}
                       onClick={() => {
-                        const newPriorities = filters.priority.includes(
-                          priority,
-                        )
+                        const newPriorities = filters.priority.includes(priority)
                           ? filters.priority.filter((p) => p !== priority)
                           : [...filters.priority, priority];
 
                         handleFilterChange("priority", newPriorities);
                       }}
-                      key={key}
                       variant={
                         filters.priority.includes(priority)
                           ? "default"
@@ -752,6 +889,32 @@ export default function BoardPage() {
                       size="sm"
                     >
                       {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Smart Priority</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(["urgent", "medium", "low"] as SmartPriority[]).map((priority) => (
+                    <Button
+                      key={priority}
+                      onClick={() => {
+                        const next = filters.smartPriority.includes(priority)
+                          ? filters.smartPriority.filter((p) => p !== priority)
+                          : [...filters.smartPriority, priority];
+
+                        handleFilterChange("smartPriority", next);
+                      }}
+                      variant={
+                        filters.smartPriority.includes(priority)
+                          ? "default"
+                          : "outline"
+                      }
+                      size="sm"
+                    >
+                      {getSmartPriorityLabel(priority)}
                     </Button>
                   ))}
                 </div>
@@ -769,11 +932,7 @@ export default function BoardPage() {
               </div>
 
               <div className="flex justify-between pt-4">
-                <Button
-                  type="button"
-                  variant={"outline"}
-                  onClick={clearFilters}
-                >
+                <Button type="button" variant="outline" onClick={clearFilters}>
                   Clear Filters
                 </Button>
                 <Button type="button" onClick={() => setIsFilterOpen(false)}>
@@ -783,18 +942,97 @@ export default function BoardPage() {
             </div>
           </DialogContent>
         </Dialog>
-        {/* Board Content */}
+
         <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-          {/* Stats */}
+          <div className="mb-6 grid gap-4 md:grid-cols-4">
+            <Card className="border-gray-200 shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-500">Total Tasks</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                  {allEnhancedTasks.length}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-red-200 shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-sm text-red-600">Urgent</p>
+                <p className="mt-1 text-2xl font-semibold text-red-700">
+                  {urgentCount}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-yellow-200 shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-sm text-yellow-600">Medium</p>
+                <p className="mt-1 text-2xl font-semibold text-yellow-700">
+                  {mediumCount}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-200 shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-sm text-green-600">Low</p>
+                <p className="mt-1 text-2xl font-semibold text-green-700">
+                  {lowCount}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {suggestedTasks.length > 0 && (
+            <Card className="mb-6 border-blue-200 shadow-sm">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                    Suggested Tasks for Today
+                  </h2>
+                </div>
+
+                <div className="grid gap-3">
+                  {suggestedTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {task.title}
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                          <span>{task.assignee || "Unassigned"}</span>
+                          <span>
+                            {task.due_date
+                              ? new Date(task.due_date).toLocaleDateString()
+                              : "No due date"}
+                          </span>
+                          <span>Score: {task.priorityScore}</span>
+                        </div>
+                      </div>
+
+                      <Badge
+                        className={`w-fit border ${getSmartPriorityBadgeClasses(task.smartPriority)}`}
+                      >
+                        {getSmartPriorityLabel(task.smartPriority)}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">Total tasks:</span>
-                {columns.reduce((sum, col) => sum + col.tasks.length, 0)}
+                <span className="font-medium">Visible tasks:</span>{" "}
+                {filteredColumns.reduce((sum, col) => sum + col.tasks.length, 0)}
               </div>
             </div>
 
-            {/* Add task dialog */}
             <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
               <DialogTrigger asChild>
                 <Button className="w-full sm:w-auto">
@@ -803,7 +1041,7 @@ export default function BoardPage() {
                 </Button>
               </DialogTrigger>
 
-              <DialogContent className="w-[95vw] max-w-106.25 mx-auto">
+              <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Task</DialogTitle>
                   <p className="text-sm text-gray-600">
@@ -844,11 +1082,11 @@ export default function BoardPage() {
                     <Label>Priority</Label>
                     <Select name="priority">
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
                       <SelectContent>
-                        {["low", "medium", "high"].map((priority, key) => (
-                          <SelectItem key={key} value={priority}>
+                        {["low", "medium", "high"].map((priority) => (
+                          <SelectItem key={priority} value={priority}>
                             {priority.charAt(0).toUpperCase() +
                               priority.slice(1)}
                           </SelectItem>
@@ -856,6 +1094,7 @@ export default function BoardPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div>
                     <Label>Due Date</Label>
                     <Input type="date" id="dueDate" name="dueDate" />
@@ -868,8 +1107,6 @@ export default function BoardPage() {
               </DialogContent>
             </Dialog>
           </div>
-
-          {/* Board Columns */}
 
           <DndContext
             sensors={sensors}
@@ -885,26 +1122,29 @@ export default function BoardPage() {
           >
             <div
               className="flex flex-col lg:flex-row lg:space-x-6 lg:overflow-x-auto
-                lg:pb-6 lg:px-2 lg:-mx-2 lg:[&::-webkit-scrollbar]:h-2
-                lg:[&::-webkit-scrollbar-track]:bg-gray-100
-                lg:[&::-webkit-scrollbar-thumb]:bg-gray-300 lg:[&::-webkit-scrollbar-thumb]:rounded-full
-                    space-y-4 lg:space-y-0"
+              lg:pb-6 lg:px-2 lg:-mx-2 lg:[&::-webkit-scrollbar]:h-2
+              lg:[&::-webkit-scrollbar-track]:bg-gray-100
+              lg:[&::-webkit-scrollbar-thumb]:bg-gray-300 lg:[&::-webkit-scrollbar-thumb]:rounded-full
+              space-y-4 lg:space-y-0"
             >
-              {filteredColumns.map((column) => (
+              {filteredColumns.map((filteredColumn) => (
                 <DroppableColumn
-                  key={column.id}
-                  column={column}
+                  key={filteredColumn.id}
+                  column={filteredColumn}
                   onCreateTask={handleCreateTask}
                   onEditColumn={handleEditColumn}
                   isDraggingTask={!!activeTask}
                 >
                   <SortableContext
-                    items={column.tasks.map((task) => task.id)}
+                    items={filteredColumn.tasks.map((task) => task.id)}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-3">
-                      {column.tasks.map((task) => (
-                        <SortableTaskCard task={task} key={task.id} />
+                      {filteredColumn.tasks.map((task) => (
+                        <SortableTaskCard
+                          task={task as EnhancedTask}
+                          key={task.id}
+                        />
                       ))}
                     </div>
                   </SortableContext>
@@ -914,7 +1154,7 @@ export default function BoardPage() {
               <div className="w-full lg:shrink-0 lg:w-80">
                 <Button
                   variant="outline"
-                  className="w-full h-full min-h-50 border-dashed border-2 text-gray-500 hover:text-gray-700"
+                  className="w-full h-full min-h-[200px] border-dashed border-2 text-gray-500 hover:text-gray-700"
                   onClick={() => setIsCreatingColumn(true)}
                 >
                   <Plus />
@@ -931,7 +1171,7 @@ export default function BoardPage() {
       </div>
 
       <Dialog open={isCreatingColumn} onOpenChange={setIsCreatingColumn}>
-        <DialogContent className="w-[95vw] max-w-425px mx-auto">
+        <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
           <DialogHeader>
             <DialogTitle>Create New Column</DialogTitle>
             <p className="text-sm text-gray-600">
@@ -964,7 +1204,7 @@ export default function BoardPage() {
       </Dialog>
 
       <Dialog open={isEditingColumn} onOpenChange={setIsEditingColumn}>
-        <DialogContent className="w-[95vw] max-w-425px mx-auto">
+        <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
           <DialogHeader>
             <DialogTitle>Edit Column</DialogTitle>
             <p className="text-sm text-gray-600">

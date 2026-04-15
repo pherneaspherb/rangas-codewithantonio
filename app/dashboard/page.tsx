@@ -285,15 +285,22 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                {/* Left side */}
                 <div>
-                  <p className="text-sm text-gray-500">Active Projects</p>
-                  <p className="text-2xl font-bold">{boards.length}</p>
+                  <p className="text-sm text-gray-500">Boards This Week</p>
+                  <p className="text-2xl font-bold">
+                    {
+                      boards.filter((board) => {
+                        const createdAt = new Date(board.created_at);
+                        const oneWeekAgo = new Date();
+                        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                        return createdAt > oneWeekAgo;
+                      }).length
+                    }
+                  </p>
                 </div>
 
-                {/* Right side (Icon centered) */}
-                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Plus className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
               </div>
             </CardContent>
