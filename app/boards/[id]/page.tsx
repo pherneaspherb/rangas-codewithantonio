@@ -1189,7 +1189,7 @@ export default function BoardPage() {
                 required
               />
             </div>
-            <div className="space-y-2 flex justify-end">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 onClick={() => setIsCreatingColumn(false)}
