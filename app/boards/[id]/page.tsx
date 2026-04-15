@@ -22,7 +22,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task as TaskType } from "@/lib/supabase/models";
 import { DialogTrigger } from "@radix-ui/react-dialog";
-import { AlertTriangle, Calendar, MoreHorizontal, Plus, Sparkles, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  MoreHorizontal,
+  Plus,
+  Sparkles,
+  User,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,7 +79,12 @@ function getStatusScore(columnTitle: string) {
 
   if (title.includes("done")) return 0;
   if (title.includes("progress") || title.includes("doing")) return 1;
-  if (title.includes("to do") || title.includes("todo") || title.includes("backlog")) return 2;
+  if (
+    title.includes("to do") ||
+    title.includes("todo") ||
+    title.includes("backlog")
+  )
+    return 2;
 
   return 1;
 }
@@ -452,6 +464,7 @@ export default function BoardPage() {
     setColumns,
     moveTask,
     updateColumn,
+    deleteColumn,
   } = useBoard(id);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -465,7 +478,9 @@ export default function BoardPage() {
 
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [editingColumnTitle, setEditingColumnTitle] = useState("");
-  const [editingColumn, setEditingColumn] = useState<ColumnWithTasks | null>(null);
+  const [editingColumn, setEditingColumn] = useState<ColumnWithTasks | null>(
+    null,
+  );
 
   const [activeTask, setActiveTask] = useState<EnhancedTask | null>(null);
 
@@ -584,7 +599,9 @@ export default function BoardPage() {
 
       if (!sourceColumn) return prev;
 
-      const activeTask = sourceColumn.tasks.find((task) => task.id === activeId);
+      const activeTask = sourceColumn.tasks.find(
+        (task) => task.id === activeId,
+      );
       if (!activeTask) return prev;
 
       const targetColumnDirect = prev.find((col) => col.id === overId);
@@ -596,12 +613,20 @@ export default function BoardPage() {
       const targetColumn = targetColumnDirect || targetColumnFromTask;
       if (!targetColumn) return prev;
 
-      const sourceColumnIndex = prev.findIndex((col) => col.id === sourceColumn.id);
-      const targetColumnIndex = prev.findIndex((col) => col.id === targetColumn.id);
+      const sourceColumnIndex = prev.findIndex(
+        (col) => col.id === sourceColumn.id,
+      );
+      const targetColumnIndex = prev.findIndex(
+        (col) => col.id === targetColumn.id,
+      );
 
-      const activeIndex = sourceColumn.tasks.findIndex((task) => task.id === activeId);
+      const activeIndex = sourceColumn.tasks.findIndex(
+        (task) => task.id === activeId,
+      );
 
-      let overIndex = targetColumn.tasks.findIndex((task) => task.id === overId);
+      let overIndex = targetColumn.tasks.findIndex(
+        (task) => task.id === overId,
+      );
 
       if (targetColumnDirect) {
         overIndex = targetColumn.tasks.length;
@@ -680,9 +705,13 @@ export default function BoardPage() {
       );
 
       if (sourceColumn && targetColumn) {
-        const oldIndex = sourceColumn.tasks.findIndex((task) => task.id === taskId);
+        const oldIndex = sourceColumn.tasks.findIndex(
+          (task) => task.id === taskId,
+        );
 
-        const newIndex = targetColumn.tasks.findIndex((task) => task.id === overId);
+        const newIndex = targetColumn.tasks.findIndex(
+          (task) => task.id === overId,
+        );
 
         if (oldIndex !== newIndex) {
           await moveTask(taskId, targetColumn.id, newIndex);
@@ -712,6 +741,23 @@ export default function BoardPage() {
     setEditingColumnTitle("");
     setIsEditingColumn(false);
     setEditingColumn(null);
+  }
+
+  async function handleDeleteColumn() {
+    if (!editingColumn) return;
+
+    const confirmed = window.confirm(`Delete "${editingColumn.title}" column?`);
+
+    if (!confirmed) return;
+
+    try {
+      await deleteColumn(editingColumn.id);
+      setIsEditingColumn(false);
+      setEditingColumnTitle("");
+      setEditingColumn(null);
+    } catch (err) {
+      console.error("Failed to delete column:", err);
+    }
   }
 
   function handleEditColumn(column: ColumnWithTasks) {
@@ -759,7 +805,9 @@ export default function BoardPage() {
     }),
   }));
 
-  const allEnhancedTasks = columnsWithSmartPriority.flatMap((column) => column.tasks);
+  const allEnhancedTasks = columnsWithSmartPriority.flatMap(
+    (column) => column.tasks,
+  );
 
   const suggestedTasks = [...allEnhancedTasks]
     .filter((task) => task.smartPriority !== "low")
@@ -797,7 +845,7 @@ export default function BoardPage() {
         />
 
         <Dialog open={isEditingTitle} onOpenChange={setIsEditingTitle}>
-          <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
+          <DialogContent className="w-[95vw] max-w-106.25 mx-auto">
             <DialogHeader>
               <DialogTitle>Edit Board</DialogTitle>
             </DialogHeader>
@@ -875,7 +923,9 @@ export default function BoardPage() {
                     <Button
                       key={priority}
                       onClick={() => {
-                        const newPriorities = filters.priority.includes(priority)
+                        const newPriorities = filters.priority.includes(
+                          priority,
+                        )
                           ? filters.priority.filter((p) => p !== priority)
                           : [...filters.priority, priority];
 
@@ -897,26 +947,30 @@ export default function BoardPage() {
               <div className="space-y-2">
                 <Label>Smart Priority</Label>
                 <div className="flex flex-wrap gap-2">
-                  {(["urgent", "medium", "low"] as SmartPriority[]).map((priority) => (
-                    <Button
-                      key={priority}
-                      onClick={() => {
-                        const next = filters.smartPriority.includes(priority)
-                          ? filters.smartPriority.filter((p) => p !== priority)
-                          : [...filters.smartPriority, priority];
+                  {(["urgent", "medium", "low"] as SmartPriority[]).map(
+                    (priority) => (
+                      <Button
+                        key={priority}
+                        onClick={() => {
+                          const next = filters.smartPriority.includes(priority)
+                            ? filters.smartPriority.filter(
+                                (p) => p !== priority,
+                              )
+                            : [...filters.smartPriority, priority];
 
-                        handleFilterChange("smartPriority", next);
-                      }}
-                      variant={
-                        filters.smartPriority.includes(priority)
-                          ? "default"
-                          : "outline"
-                      }
-                      size="sm"
-                    >
-                      {getSmartPriorityLabel(priority)}
-                    </Button>
-                  ))}
+                          handleFilterChange("smartPriority", next);
+                        }}
+                        variant={
+                          filters.smartPriority.includes(priority)
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                      >
+                        {getSmartPriorityLabel(priority)}
+                      </Button>
+                    ),
+                  )}
                 </div>
               </div>
 
@@ -1029,7 +1083,10 @@ export default function BoardPage() {
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               <div className="text-sm text-gray-600">
                 <span className="font-medium">Visible tasks:</span>{" "}
-                {filteredColumns.reduce((sum, col) => sum + col.tasks.length, 0)}
+                {filteredColumns.reduce(
+                  (sum, col) => sum + col.tasks.length,
+                  0,
+                )}
               </div>
             </div>
 
@@ -1204,7 +1261,7 @@ export default function BoardPage() {
       </Dialog>
 
       <Dialog open={isEditingColumn} onOpenChange={setIsEditingColumn}>
-        <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
+        <DialogContent className="w-[95vw] max-w-106.25 mx-auto">
           <DialogHeader>
             <DialogTitle>Edit Column</DialogTitle>
             <p className="text-sm text-gray-600">
@@ -1222,19 +1279,29 @@ export default function BoardPage() {
                 required
               />
             </div>
-            <div className="space-y-2 flex justify-end">
+            <div className="flex items-center justify-between gap-2 pt-2">
               <Button
                 type="button"
-                onClick={() => {
-                  setIsEditingColumn(false);
-                  setEditingColumnTitle("");
-                  setEditingColumn(null);
-                }}
-                variant="outline"
+                variant="destructive"
+                onClick={handleDeleteColumn}
               >
-                Cancel
+                Delete Column
               </Button>
-              <Button>Edit Column</Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingColumn(false);
+                    setEditingColumnTitle("");
+                    setEditingColumn(null);
+                  }}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
             </div>
           </form>
         </DialogContent>
