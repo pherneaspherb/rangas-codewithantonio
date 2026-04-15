@@ -31,6 +31,7 @@ import {
   Plus,
   Rocket,
   Search,
+  Trash2,
   Trello,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,7 +40,7 @@ import { useState } from "react";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
-  const { boards, loading, error, createBoard } = useBoards();
+  const { boards, loading, error, createBoard, deleteBoard } = useBoards();
   const router = useRouter();
   const { isFreeUser } = usePlan();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -49,6 +50,7 @@ export default function DashboardPage() {
   const [showCreateBoardDialog, setShowCreateBoardDialog] = useState(false);
   const [boardTitle, setBoardTitle] = useState("");
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+  const [deletingBoardId, setDeletingBoardId] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -205,6 +207,23 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDeleteBoard = async (boardId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this board?",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingBoardId(boardId);
+      await deleteBoard(boardId);
+    } catch (err) {
+      console.error("Failed to delete board:", err);
+    } finally {
+      setDeletingBoardId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -307,19 +326,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* ✅ BOARD LIST (optional, you can keep this) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {filteredBoards.length === 0 ? (
-            <p>No boards yet.</p>
-          ) : (
-            boards.map((board) => (
-              <Card key={board.id}>
-                <CardContent className="p-4">{board.title}</CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-
         {/* Boards */}
         <div className="mt-8 sm:mt-12">
           {/* Header row: left text + right controls */}
@@ -419,11 +425,30 @@ export default function DashboardPage() {
                   <Link href={`/boards/${board.id}`} key={key}>
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className={`w-4 h-4 ${board.color} rounded`} />
-                          <Badge className="text-xs" variant="secondary">
-                            New
-                          </Badge>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div
+                              className={`w-4 h-4 ${board.color} rounded shrink-0`}
+                            />
+                            <Badge className="text-xs" variant="secondary">
+                              New
+                            </Badge>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-red-600"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteBoard(board.id);
+                            }}
+                            disabled={deletingBoardId === board.id}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 sm:p-6">
@@ -467,11 +492,30 @@ export default function DashboardPage() {
                     <Link href={`/boards/${board.id}`}>
                       <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                         <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <div className={`w-4 h-4 ${board.color} rounded`} />
-                            <Badge className="text-xs" variant="secondary">
-                              New
-                            </Badge>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div
+                                className={`w-4 h-4 ${board.color} rounded shrink-0`}
+                              />
+                              <Badge className="text-xs" variant="secondary">
+                                New
+                              </Badge>
+                            </div>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-400 hover:text-red-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteBoard(board.id);
+                              }}
+                              disabled={deletingBoardId === board.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </CardHeader>
                         <CardContent className="p-4 sm:p-6">

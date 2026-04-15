@@ -68,7 +68,23 @@ export function useBoards() {
     }
   }
 
-  return { boards, loading, error, createBoard };
+  async function deleteBoard(boardId: string) {
+    if (!user) throw new Error("User not authenticated");
+    if (!supabase) throw new Error("Supabase not ready");
+
+    try {
+      setError(null);
+
+      await boardService.deleteBoard(supabase, boardId);
+
+      setBoards((prev) => prev.filter((board) => board.id !== boardId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete board.");
+      throw err;
+    }
+  }
+
+  return { boards, loading, error, createBoard, deleteBoard };
 }
 
 export function useBoard(boardId: string) {
