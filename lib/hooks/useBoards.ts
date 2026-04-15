@@ -287,6 +287,24 @@ export function useBoard(boardId: string) {
     }
   }
 
+  async function deleteTask(taskId: string) {
+    if (!supabase) throw new Error("Supabase not ready");
+
+    try {
+      await taskService.deleteTask(supabase, taskId);
+
+      setColumns((prev) =>
+        prev.map((col) => ({
+          ...col,
+          tasks: col.tasks.filter((task) => task.id !== taskId),
+        })),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete task.");
+      throw err;
+    }
+  }
+
   return {
     board,
     columns,
@@ -299,5 +317,6 @@ export function useBoard(boardId: string) {
     createColumn,
     updateColumn,
     deleteColumn,
+    deleteTask,
   };
 }

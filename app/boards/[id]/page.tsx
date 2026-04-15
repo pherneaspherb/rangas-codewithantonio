@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useBoard } from "@/lib/hooks/useBoards";
+import { useBoard, useBoards } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task as TaskType } from "@/lib/supabase/models";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import {
@@ -29,8 +29,9 @@ import {
   Plus,
   Sparkles,
   User,
+  Trash2,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -205,6 +206,8 @@ function DroppableColumn({
     id: column.id,
   });
 
+  const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
+
   return (
     <div ref={setNodeRef} className="w-full lg:shrink-0 lg:w-80">
       <div
@@ -238,7 +241,10 @@ function DroppableColumn({
         <div className="p-2">
           {children}
 
-          <Dialog>
+          <Dialog
+            open={isCreateTaskDialogOpen}
+            onOpenChange={setIsCreateTaskDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
@@ -254,7 +260,13 @@ function DroppableColumn({
                 <p className="text-sm text-gray-600">Add a task to the board</p>
               </DialogHeader>
 
-              <form className="space-y-4" onSubmit={onCreateTask}>
+              <form
+                className="space-y-4"
+                onSubmit={async (e) => {
+                  await onCreateTask(e);
+                  setIsCreateTaskDialogOpen(false);
+                }}
+              >
                 <div className="space-y-2">
                   <Label htmlFor="title">Title *</Label>
                   <Input
@@ -316,7 +328,13 @@ function DroppableColumn({
   );
 }
 
-function SortableTaskCard({ task }: { task: EnhancedTask }) {
+function SortableTaskCard({
+  task,
+  onDelete,
+}: {
+  task: EnhancedTask;
+  onDelete: (taskId: string, taskTitle: string) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -341,15 +359,32 @@ function SortableTaskCard({ task }: { task: EnhancedTask }) {
         <CardContent className="p-4 sm:p-5">
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
-              <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug flex-1">
-                {task.title}
-              </h4>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug">
+                  {task.title}
+                </h4>
+              </div>
 
-              <Badge
-                className={`border ${getSmartPriorityBadgeClasses(task.smartPriority)}`}
-              >
-                {getSmartPriorityLabel(task.smartPriority)}
-              </Badge>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge
+                  className={`border ${getSmartPriorityBadgeClasses(task.smartPriority)}`}
+                >
+                  {getSmartPriorityLabel(task.smartPriority)}
+                </Badge>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-gray-400 hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id, task.title);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <p className="text-sm text-gray-500 line-clamp-2">
@@ -455,6 +490,8 @@ function TaskOverlayfunction({ task }: { task: EnhancedTask }) {
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>();
+  const { deleteBoard } = useBoards();
+  const router = useRouter();
   const {
     board,
     createColumn,
@@ -465,6 +502,7 @@ export default function BoardPage() {
     moveTask,
     updateColumn,
     deleteColumn,
+    deleteTask,
   } = useBoard(id);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -534,6 +572,23 @@ export default function BoardPage() {
       });
       setIsEditingTitle(false);
     } catch {}
+  }
+
+  async function handleDeleteBoard() {
+    if (!board) return;
+
+    const confirmed = window.confirm(
+      `Delete "${board.title}" board? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteBoard(board.id);
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Failed to delete board:", err);
+    }
   }
 
   async function handleCreateTask(e: React.FormEvent<HTMLFormElement>) {
@@ -760,6 +815,18 @@ export default function BoardPage() {
     }
   }
 
+  async function handleDeleteTask(taskId: string, taskTitle: string) {
+    const confirmed = window.confirm(`Delete "${taskTitle}" task?`);
+
+    if (!confirmed) return;
+
+    try {
+      await deleteTask(taskId);
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+    }
+  }
+
   function handleEditColumn(column: ColumnWithTasks) {
     setIsEditingColumn(true);
     setEditingColumn(column);
@@ -892,15 +959,25 @@ export default function BoardPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2">
+              <div className="flex items-center justify-between gap-2 pt-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => setIsEditingTitle(false)}
+                  variant="destructive"
+                  onClick={handleDeleteBoard}
                 >
-                  Cancel
+                  Delete Board
                 </Button>
-                <Button type="submit">Save Changes</Button>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditingTitle(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save Changes</Button>
+                </div>
               </div>
             </form>
           </DialogContent>
@@ -1201,6 +1278,7 @@ export default function BoardPage() {
                         <SortableTaskCard
                           task={task as EnhancedTask}
                           key={task.id}
+                          onDelete={handleDeleteTask}
                         />
                       ))}
                     </div>

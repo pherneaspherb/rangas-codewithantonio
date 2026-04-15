@@ -147,6 +147,12 @@ export const taskService = {
     return (data ?? []) as Task[];
   },
 
+  async deleteTask(supabase: SupabaseClient, taskId: string): Promise<void> {
+    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+    if (error) throw error;
+  },
+
   async createTask(
     supabase: SupabaseClient,
     task: Omit<Task, "id" | "created_at" | "updated_at">,
