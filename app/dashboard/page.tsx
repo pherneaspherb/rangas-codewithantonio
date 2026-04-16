@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePlan } from "@/lib/contexts/PlanContext";
 import { useBoards } from "@/lib/hooks/useBoards";
+import { useDashboardAnalytics } from "@/lib/hooks/useDashboardAnalytics";
 import { Board } from "@/lib/supabase/models";
 import { useUser } from "@clerk/nextjs";
 import {
@@ -34,10 +35,22 @@ import {
   Trash2,
   Trello,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useDashboardAnalytics } from "@/lib/hooks/useDashboardAnalytics";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -87,6 +100,15 @@ export default function DashboardPage() {
     return matchesSearch && matchesDateRange;
   });
 
+  const taskStatusData = [
+    { name: "Active", value: analytics.activeTasks ?? 0 },
+    { name: "Completed", value: analytics.completedTasks ?? 0 },
+  ];
+
+  const COLORS = ["#22c55e", "#3b82f6"]; // Active, Completed
+
+  const boardTaskData = analytics.boardBreakdown ?? [];
+
   function clearFilters() {
     setFilters({
       search: "",
@@ -99,8 +121,6 @@ export default function DashboardPage() {
         max: null as number | null,
       },
     });
-
-
   }
 
   if (!isLoaded) return <div>Loading user...</div>;
@@ -241,31 +261,46 @@ export default function DashboardPage() {
             Here's what's happening with your boards today.
           </p>
         </div>
-
-        {/* ✅ STATS (this is what the tutorial shows) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* 1st card */}
+        {/* ✅ STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          {/* Completion Rate */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                {/* Left side */}
+                <div>
+                  <p className="text-sm text-gray-500">Completion Rate</p>
+                  <p className="text-2xl font-bold">
+                    {analytics?.completionRate ?? 0}%
+                  </p>
+                </div>
+
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Total Boards */}
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Total Boards</p>
                   <p className="text-2xl font-bold">{boards.length}</p>
                 </div>
 
-                {/* Right side (Icon centered) */}
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Trello className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          {/* 2nd card */}
+
+          {/* Recent Activity */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                {/* Left side */}
                 <div>
                   <p className="text-sm text-gray-500">Recent Activity</p>
                   <p className="text-2xl font-bold">
@@ -280,62 +315,87 @@ export default function DashboardPage() {
                   </p>
                 </div>
 
-                {/* Right side */}
                 <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          {/* 3rd card */}
+
+          {/* Total Tasks */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                {/* Left side */}
                 <div>
                   <p className="text-sm text-gray-500">Total Tasks</p>
                   <p className="text-2xl font-bold">{analytics.totalTasks}</p>
-                  <p className="text-sm text-gray-500">Completed</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-sm text-gray-500 mt-2">Completed</p>
+                  <p className="text-xl font-bold">
                     {analytics.completedTasks}
                   </p>
-                  <p className="text-sm text-gray-500">Active Tasks</p>
-                  <p className="text-2xl font-bold">{analytics.activeTasks}</p>
+                  <p className="text-sm text-gray-500 mt-2">Active Tasks</p>
+                  <p className="text-xl font-bold">{analytics.activeTasks}</p>
                 </div>
 
-                {/* Right side (Icon centered) */}
-                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          {/* 4th card */}
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Boards This Week</p>
-                  <p className="text-2xl font-bold">
-                    {
-                      boards.filter((board) => {
-                        const createdAt = new Date(board.created_at);
-                        const oneWeekAgo = new Date();
-                        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                        return createdAt > oneWeekAgo;
-                      }).length
-                    }
-                  </p>
-                </div>
-
-                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Plus className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+        {/* ✅ ANALYTICS OVERVIEW */}
+        <section className="mb-8 sm:mb-10">
+          <div className="mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Analytics Overview
+            </h2>
+            <p className="text-gray-600">
+              Track productivity, task progress, and board activity.
+            </p>
+          </div>
 
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Active vs Completed Tasks</CardTitle>
+                <CardDescription>
+                  Overview of current workload and finished tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-75">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    const COLORS = ["#22c55e", "#3b82f6"]; // Active, Completed
+                    <Pie
+                      data={taskStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      labelLine={false}
+                    >
+                      {taskStatusData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
         {/* Boards */}
         <div className="mt-8 sm:mt-12">
           {/* Header row: left text + right controls */}
