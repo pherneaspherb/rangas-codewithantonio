@@ -37,10 +37,12 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useDashboardAnalytics } from "@/lib/hooks/useDashboardAnalytics";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const { boards, loading, error, createBoard, deleteBoard } = useBoards();
+  const analytics = useDashboardAnalytics();
   const router = useRouter();
   const { isFreeUser } = usePlan();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -97,6 +99,8 @@ export default function DashboardPage() {
         max: null as number | null,
       },
     });
+
+
   }
 
   if (!isLoaded) return <div>Loading user...</div>;
@@ -289,8 +293,14 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 {/* Left side */}
                 <div>
-                  <p className="text-sm text-gray-500">Active Projects</p>
-                  <p className="text-2xl font-bold">{boards.length}</p>
+                  <p className="text-sm text-gray-500">Total Tasks</p>
+                  <p className="text-2xl font-bold">{analytics.totalTasks}</p>
+                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-2xl font-bold">
+                    {analytics.completedTasks}
+                  </p>
+                  <p className="text-sm text-gray-500">Active Tasks</p>
+                  <p className="text-2xl font-bold">{analytics.activeTasks}</p>
                 </div>
 
                 {/* Right side (Icon centered) */}

@@ -521,6 +521,9 @@ export default function BoardPage() {
   );
 
   const [activeTask, setActiveTask] = useState<EnhancedTask | null>(null);
+  const [dragSourceColumnId, setDragSourceColumnId] = useState<string | null>(
+    null,
+  );
 
   const [filters, setFilters] = useState({
     priority: [] as string[],
@@ -629,6 +632,15 @@ export default function BoardPage() {
 
   function handleDragStart(event: DragStartEvent) {
     const taskId = event.active.id as string;
+
+    const sourceColumn = columns.find((col) =>
+      col.tasks.some((task) => task.id === taskId),
+    );
+
+    if (sourceColumn) {
+      setDragSourceColumnId(sourceColumn.id);
+    }
+
     const task = columnsWithSmartPriority
       .flatMap((col) => col.tasks)
       .find((task) => task.id === taskId);
@@ -734,44 +746,47 @@ export default function BoardPage() {
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+
     setActiveTask(null);
 
-    if (!over) return;
+    if (!over) {
+      setDragSourceColumnId(null);
+      return;
+    }
 
     const taskId = active.id as string;
     const overId = over.id as string;
 
-    const targetColumn = columns.find((col) => col.id === overId);
-    if (targetColumn) {
-      const sourceColumn = columns.find((col) =>
-        col.tasks.some((task) => task.id === taskId),
-      );
+    let destinationColumnId: string | null = null;
+    let newIndex = 0;
 
-      if (sourceColumn && sourceColumn.id !== targetColumn.id) {
-        await moveTask(taskId, targetColumn.id, targetColumn.tasks.length);
-      }
+    const directColumn = columns.find((col) => col.id === overId);
+
+    if (directColumn) {
+      destinationColumnId = directColumn.id;
+      newIndex = directColumn.tasks.length;
     } else {
-      const sourceColumn = columns.find((col) =>
-        col.tasks.some((task) => task.id === taskId),
-      );
-
       const targetColumn = columns.find((col) =>
         col.tasks.some((task) => task.id === overId),
       );
 
-      if (sourceColumn && targetColumn) {
-        const oldIndex = sourceColumn.tasks.findIndex(
-          (task) => task.id === taskId,
-        );
-
-        const newIndex = targetColumn.tasks.findIndex(
-          (task) => task.id === overId,
-        );
-
-        if (oldIndex !== newIndex) {
-          await moveTask(taskId, targetColumn.id, newIndex);
-        }
+      if (targetColumn) {
+        destinationColumnId = targetColumn.id;
+        newIndex = targetColumn.tasks.findIndex((task) => task.id === overId);
       }
+    }
+
+    if (!destinationColumnId || !dragSourceColumnId) {
+      setDragSourceColumnId(null);
+      return;
+    }
+
+    try {
+      await moveTask(taskId, destinationColumnId, newIndex);
+    } catch (error) {
+      console.error("Failed to persist task move:", error);
+    } finally {
+      setDragSourceColumnId(null);
     }
   }
 
